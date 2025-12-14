@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${kanit.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${kanit.variable} antialiased layout-shell`}
       >
         <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
       </body>
