@@ -5,29 +5,34 @@ import styled from "styled-components";
 const Header = styled.header`
   width: 100%;
   background-color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
   height: 82px;
   display: flex;
+  padding-left: 68px;
 
-  .box-warp{
-
+  .content{
+    padding: 22px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
   }
   .pic-icon{
     height: 76px;
+    object-fit: contain;
+  }
+  .text-box{
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
   }
   .text-th{
-    width: 208px;
-    height: 16px;
     color: #01205F;
     font-size: 24px;
-    font-style: normal;
     font-weight: 500;
   }
   .text-eng{
-    width: 310px;
-    height: 16px;
     color: #3273BA;
     font-size: 22px;
-    font-style: normal;
     font-weight: 500;
   }
 `;
@@ -35,9 +40,14 @@ const Header = styled.header`
 export default function AppHeader() {
   return (
     <Header>
-      <img className="pic-icon" src="icon.png" alt="icon" />
-      <span className="text-th">ระบบเฝ้าระวังระดับน้ำ</span>
-      <span className="text-eng">Water Level Monitoring System</span>
+      <div className="content">
+        <img className="pic-icon" src="icon.png" alt="icon" />
+        <div className="text-box">
+          <span className="text-th">ระบบเฝ้าระวังระดับน้ำ</span>
+          <span className="text-eng">Water Level Monitoring System</span>
+        </div>
+        
+      </div>
     </Header>
   );
 }
