@@ -39,7 +39,9 @@ const Home = styled.div`
     display: flex;
     flex-direction: column;
     justify-content: center;
-    margin: 40px auto 0; /* center horizontally with some spacing from text */
+    margin: 40px auto 0;
+    align-items: center;
+    gap: 24px;
   }
   .box-text{
     color: #01205F;
@@ -48,6 +50,11 @@ const Home = styled.div`
     font-style: normal;
     font-weight: 500;
   }
+  .controls-row{
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
   .mini-text-box{
     display: flex;
     width: 450px;
@@ -55,20 +62,21 @@ const Home = styled.div`
     border-radius: 26px;
     border: 1px solid #000;
     background: #FFFCF7;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
   }
   .mini-text{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
     color: #898989;
-    text-align: center;
+    text-align: left;
     font-size: 24px;
     font-style: normal;
     font-weight: 500;
-    padding-right: 180px;
   }
   .drop-icon{
-    justify-content: center;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
   }
   .button{
     width: 160px;
@@ -76,11 +84,11 @@ const Home = styled.div`
     border-radius: 26px;
     background: #01205F;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   }
   .button-text{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
     color: #FFFCF7;
     text-align: center;
     font-size: 24px;
@@ -95,9 +103,11 @@ export default function HomePage() {
         <div className="header2-text">รองรับการดูย้อนหลัง ส่งออกรายงาน และแสดงผลบนแผนที่</div>
         <div className="wh-box">
             <div className="box-text">เลือกจังหวัดเพื่อดูสถานีวัดระดับน้ำ</div>
-            <div className="mini-text-box">
-                <span className="mini-text">เลือกจังหวัด....</span>
-                <img className="drop-icon" src="drop-down.svg" alt="drop down" />
+            <div className="controls-row">
+                <div className="mini-text-box">
+                    <span className="mini-text">เลือกจังหวัด....</span>
+                    <img className="drop-icon" src="drop-down.svg" alt="drop down" />
+                </div>
                 <span className="button">
                     <div className="button-text">ดูสถานี</div>
                 </span>
