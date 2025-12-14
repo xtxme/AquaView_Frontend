@@ -35,6 +35,20 @@ const Header = styled.header`
     font-size: 22px;
     font-weight: 500;
   }
+
+  .right-text{
+    color: #898989;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    cursor: pointer;
+  }
+  .content-right{
+    display: flex;
+    align-items: center;
+    gap: 108px;
+    padding-left: 600px;
+  }
 `;
 
 export default function AppHeader() {
@@ -46,7 +60,10 @@ export default function AppHeader() {
           <span className="text-th">ระบบเฝ้าระวังระดับน้ำ</span>
           <span className="text-eng">Water Level Monitoring System</span>
         </div>
-        
+      </div>
+      <div className="content-right">
+        <span className="right-text">Home</span>
+        <span className="right-text">Dashboard</span>
       </div>
     </Header>
   );
