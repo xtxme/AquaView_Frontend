@@ -5,6 +5,9 @@ export default function Home() {
   return (
     <>
       <AppHeader />
+      <main>
+        {/* TODO: add page content */}
+      </main>
       <AppFooter />
     </>
   );
