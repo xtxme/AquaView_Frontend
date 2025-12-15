@@ -1,5 +1,6 @@
 "use client";
 
+import ProvinceBoxPage from "@/app/components/home/ProvinceBox";
 import styled from "styled-components";
 
 const Home = styled.div`
@@ -30,89 +31,27 @@ const Home = styled.div`
     padding-top: 24px;
     z-index: 1;
   }
-
-  .wh-box{
-    width: 730px;
-    height: 254px;
-    border-radius: 26px;
-    background: #FFFCF7;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    margin: 40px auto 0;
-    align-items: center;
-    gap: 24px;
-  }
-  .box-text{
+  .header3-text{
     color: #01205F;
-    text-align: center;
-    font-size: 24px;
+    font-size: 28px;
     font-style: normal;
     font-weight: 500;
-  }
-  .controls-row{
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-  .mini-text-box{
-    display: flex;
-    width: 450px;
-    height: 70px;
-    border-radius: 26px;
-    border: 1px solid #000;
-    background: #FFFCF7;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 24px;
-  }
-  .mini-text{
-    color: #898989;
-    text-align: left;
-    font-size: 24px;
-    font-style: normal;
-    font-weight: 500;
-  }
-  .drop-icon{
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-  }
-  .button{
-    width: 160px;
-    height: 70px;
-    border-radius: 26px;
-    background: #01205F;
-    display: flex;
-    align-items: center;
+    padding-top: 90px;
     justify-content: center;
-    cursor: pointer;
+    flex-direction: column;
+    
   }
-  .button-text{
-    color: #FFFCF7;
-    text-align: center;
-    font-size: 24px;
-    font-style: normal;
-    font-weight: 500;
-  }
+  
 `;
 export default function HomePage() {
   return (
     <Home>
         <div className="header-text">ระบบเฝ้าระวังและคาดการณ์ระดับน้ำอัตโนมัติ <br/>แจ้งเตือนก่อนถึงระดับวิกฤต</div>
         <div className="header2-text">รองรับการดูย้อนหลัง ส่งออกรายงาน และแสดงผลบนแผนที่</div>
-        <div className="wh-box">
-            <div className="box-text">เลือกจังหวัดเพื่อดูสถานีวัดระดับน้ำ</div>
-            <div className="controls-row">
-                <div className="mini-text-box">
-                    <span className="mini-text">เลือกจังหวัด....</span>
-                    <img className="drop-icon" src="drop-down.svg" alt="drop down" />
-                </div>
-                <span className="button">
-                    <div className="button-text">ดูสถานี</div>
-                </span>
-            </div>
-        </div>
+        <ProvinceBoxPage/>
+        <div className="header3-text">แผนที่ตำแหน่งเครื่องวัด </div>
+
+
     </Home>
   );
 }
