@@ -39,7 +39,8 @@ const Home = styled.div`
     font-weight: 500;
     justify-content: center;
     flex-direction: column;
-    padding: 90px ;
+    padding-top: 90px ;
+    transform:translateX(143px);
   }
   
 `;
