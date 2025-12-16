@@ -1,6 +1,7 @@
 "use client";
 
 import ProvinceBoxPage from "@/app/components/home/ProvinceBox";
+import StationMapPage from "@/app/components/home/StationMap";
 import styled from "styled-components";
 
 const Home = styled.div`
@@ -36,10 +37,9 @@ const Home = styled.div`
     font-size: 28px;
     font-style: normal;
     font-weight: 500;
-    padding-top: 90px;
     justify-content: center;
     flex-direction: column;
-    
+    padding: 90px ;
   }
   
 `;
@@ -49,7 +49,8 @@ export default function HomePage() {
         <div className="header-text">ระบบเฝ้าระวังและคาดการณ์ระดับน้ำอัตโนมัติ <br/>แจ้งเตือนก่อนถึงระดับวิกฤต</div>
         <div className="header2-text">รองรับการดูย้อนหลัง ส่งออกรายงาน และแสดงผลบนแผนที่</div>
         <ProvinceBoxPage/>
-        <div className="header3-text">แผนที่ตำแหน่งเครื่องวัด </div>
+        <div className="header3-text">แผนที่ตำแหน่งเครื่องวัด</div>
+        <StationMapPage />
 
 
     </Home>

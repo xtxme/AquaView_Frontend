@@ -1,6 +1,7 @@
 "use client";
 
 import styled from "styled-components";
+import "leaflet/dist/leaflet.css";
 
 const Header = styled.header`
   width: 100%;
