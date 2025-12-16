@@ -2,7 +2,7 @@
 
 import styled from "styled-components";
 
-const Placeholder = styled.div`
+const StationMap = styled.div`
   width: 1074px;
   height: 698px;
   border-radius: 26px;
@@ -16,8 +16,18 @@ const Placeholder = styled.div`
   color: #3273ba;
   font-size: 20px;
   font-weight: 500;
+  .inside-box{
+    width: 1050px;
+    height: 678px;
+    background-color: red;
+    border-radius: 26px;
+  }
 `;
 
 export default function StationMapPage() {
-  return <Placeholder>เตรียมพื้นที่สำหรับแผนที่</Placeholder>;
+  return (
+    <StationMap>
+      <div className="inside-box">อยากได้ map ให้อยู่ตรงนี้</div>
+    </StationMap>
+  );
 }
