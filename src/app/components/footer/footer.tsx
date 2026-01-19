@@ -10,7 +10,7 @@ const Footer = styled.footer`
   display: flex;
   align-items: center;
   z-index: 10;
-  margin-top: 30px;
+  margin-top: auto;
 
   .content {
     padding-left: 388px;

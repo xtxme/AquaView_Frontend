@@ -10,8 +10,8 @@ const PRESET_HEADER_HEIGHT = '80px';
 const StyledDashboard = styled.div`
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(180deg, #F0F4F8 0%, #FFFFFF 100%);
   padding: 20px;
+  padding-bottom: 30px;
   font-family: 'Inter', sans-serif;
 
   & .search-container {

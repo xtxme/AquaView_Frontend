@@ -9,9 +9,7 @@ import styled from "styled-components";
 const Home = styled.div`
   flex: 1;
   width: 100%;
-  
-  /* Changed from height: 100% to ensure background covers full content when scrolling */
-  min-height: 100vh;
+  padding-bottom: 80px;
   
   background-color: #e1ebf7;
 
@@ -38,17 +36,18 @@ const Home = styled.div`
     padding-top: 16px;
     z-index: 1;
   }
+  .content-container {
+    width: 90%;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
   .header3-text{
     color: #01205F;
     font-size: 24px;
     font-style: normal;
     font-weight: 500;
-    display: flex; /* Added display: flex to make justify-content work */
-    justify-content: center;
-    flex-direction: column;
-    padding-top: 50px ;
-    text-align: center; /* Added text-align center */
-    /* transform:translateX(120px); -- Removed to prevent horizontal overflow */
+    padding-top: 50px;
   }
 
 `;
@@ -71,9 +70,13 @@ export default function HomePage() {
       <div className="header-text">ระบบเฝ้าระวังและคาดการณ์ระดับน้ำอัตโนมัติ <br />แจ้งเตือนก่อนถึงระดับวิกฤต</div>
       <div className="header2-text">รองรับการดูย้อนหลัง ส่งออกรายงาน และแสดงผลบนแผนที่</div>
       <ProvinceBoxPage onProvinceSelect={handleProvinceSelect} />
-      <div className="header3-text">แผนที่ตำแหน่งเครื่องวัด</div>
+      <div className="content-container">
+        <div className="header3-text">แผนที่ตำแหน่งเครื่องวัด</div>
+      </div>
       <StationMapPage ref={mapRef} selectedProvince={selectedProvince} />
-      <div className="header3-text">ฟีเจอร์หลักของระบบ</div>
+      <div className="content-container">
+        <div className="header3-text">ฟีเจอร์หลักของระบบ</div>
+      </div>
       <WhiteBoxPage />
 
 

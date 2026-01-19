@@ -2,137 +2,291 @@
 
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  LineChart, Line, XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer
+} from 'recharts';
 
-// 1. Declare a variable for chart configuration
-const CHART_PRIMARY_COLOR = '#3B82F6'; // Blue
-const CHART_SECONDARY_COLOR = '#8B5CF6'; // Purple
+type WaterDataPoint = {
+  time: string;
+  p1: number;
+  p2: number;
+};
 
-// 2. Styled Components using Class Selectors
+type WaterLevelChartProps = {
+  title?: string;
+  data: WaterDataPoint[];
+  maxValue?: number;
+};
+
+// 1. Declare constants for styling
+const CHART_PRIMARY_COLOR = '#5B6CFF'; // Blue for P1
+const CHART_SECONDARY_COLOR = '#E23BAA'; // Pink for P2
+const ACTIVE_BUTTON_COLOR = '#2563EB';
+const INACTIVE_BUTTON_BG = '#F3F4F6';
+const INACTIVE_BUTTON_TEXT = '#6B7280';
+
+// 2. Styled Components
 const StyledChartCard = styled.div`
   background: #FFFFFF;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 24px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 24px rgba(1, 32, 95, 0.1);
+  font-family: var(--font-kanit), Arial, Helvetica, sans-serif;
+  width: 100%;
+  max-width: 900px;
+  height: 550px;
+  margin: 32px auto 0;
 
   & .chart-header {
     display: flex;
+    flex-direction: row;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
+    width: 100%;
   }
 
   & .chart-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1E293B;
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1E3A8A;
     margin: 0;
+    flex: 1;
+  }
+
+  & .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
   }
 
   & .controls {
     display: flex;
-    gap: 12px;
+    align-items: center;
+    gap: 0;
   }
 
-  & .toggle-btn {
-    padding: 8px 16px;
-    border-radius: 20px;
-    border: 1px solid #3B82F6;
-    background: transparent;
-    color: #3B82F6;
-    font-size: 14px;
+  & .legend-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  & .legend-btn {
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    background: #FFFFFF;
+    color: #374151;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
 
     &:hover {
-      background: #EFF6FF;
+      border-color: #2563EB;
     }
 
     &.active {
-      background: #3B82F6;
-      color: white;
-      box-shadow: 0px 2px 4px rgba(59, 130, 246, 0.3);
+      border-color: transparent;
+      background: #F3F4F6;
+    }
+
+    &.p1 {
+      .legend-dot {
+        background: ${CHART_PRIMARY_COLOR};
+      }
+    }
+
+    &.p2 {
+      .legend-dot {
+        background: ${CHART_SECONDARY_COLOR};
+      }
     }
   }
 
+  & .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  & .toggle-btn {
+    font-family: inherit;
+    padding: 10px 20px;
+    border-radius: 9999px;
+    border: none;
+    background: ${INACTIVE_BUTTON_BG};
+    color: ${INACTIVE_BUTTON_TEXT};
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+
+    &:first-child {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      padding-right: 24px;
+    }
+
+    &:last-child {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      padding-left: 24px;
+    }
+
+    &:hover {
+      background: #E5E7EB;
+    }
+
+    &.active {
+      background: ${ACTIVE_BUTTON_COLOR};
+      color: white;
+      box-shadow: 0px 2px 8px rgba(37, 99, 235, 0.3);
+    }
+  }
+
+  & .divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(0, 0, 0, 0.3);
+  }
+
   & .chart-area {
-    height: 300px;
+    height: 450px;
     width: 100%;
   }
 `;
 
-const data = [
-  { time: '1:00', p1: 2.0, p2: 1.0 },
-  { time: '3:00', p1: 3.0, p2: 2.0 },
-  { time: '5:00', p1: 2.0, p2: 1.0 },
-  { time: '7:00', p1: 4.0, p2: 3.0 },
-  { time: '9:00', p1: 3.0, p2: 2.0 },
-  { time: '11:00', p1: 5.0, p2: 4.0 },
-  { time: '13:00', p1: 4.0, p2: 3.0 },
-  { time: '15:00', p1: 3.0, p2: 2.0 },
-  { time: '17:00', p1: 4.0, p2: 3.0 },
-  { time: '19:00', p1: 5.0, p2: 4.0 },
-  { time: '21:00', p1: 6.0, p2: 5.0 },
-  { time: '23:00', p1: 5.0, p2: 4.0 },
-];
+export default function WaterLevelChart({
+  title = "กราฟแสดงระดับน้ำปัจจุบัน",
+  data,
+  maxValue = 100,
+}: WaterLevelChartProps) {
+  const [unit, setUnit] = useState<"m" | "%">("m");
+  const [showP1, setShowP1] = useState(true);
+  const [showP2, setShowP2] = useState(true);
 
-export function WaterLevelChart() {
-  const [activeTab, setActiveTab] = useState<'p1' | 'p2' | 'both'>('both');
+  const chartData =
+    unit === "m"
+      ? data
+      : data.map(d => ({
+          ...d,
+          p1: (d.p1 / maxValue) * 100,
+          p2: (d.p2 / maxValue) * 100,
+        }));
 
   return (
     <StyledChartCard>
+      {/* Header */}
       <div className="chart-header">
-        <h3 className="chart-title">การเปลี่ยนแปลงระดับน้ำสถานี</h3>
-        <div className="controls">
-          <button
-            className={`toggle-btn ${activeTab === 'p1' ? 'active' : ''}`}
-            onClick={() => setActiveTab('p1')}
-          >
-            ตรวจ P1
-          </button>
-          <button
-            className={`toggle-btn ${activeTab === 'p2' ? 'active' : ''}`}
-            onClick={() => setActiveTab('p2')}
-          >
-            ตรวจ P2
-          </button>
+        {/* Title (left) */}
+        <h2 className="chart-title">
+          {title}
+        </h2>
+
+        {/* Controls (right) */}
+        <div className="header-controls">
+          {/* P1 P2 Legend */}
+          <div className="legend-controls">
+            <button
+              className={`legend-btn p1 ${showP1 ? "active" : ""}`}
+              onClick={() => setShowP1(!showP1)}
+            >
+              <span className="legend-dot"></span>
+              P1
+            </button>
+            <button
+              className={`legend-btn p2 ${showP2 ? "active" : ""}`}
+              onClick={() => setShowP2(!showP2)}
+            >
+              <span className="legend-dot"></span>
+              P2
+            </button>
+          </div>
+
+          {/* เมตร | เปอร์เซ็น */}
+          <div className="controls">
+            <button
+              onClick={() => setUnit("m")}
+              className={`toggle-btn ${unit === "m" ? "active" : ""}`}
+            >
+              เมตร (ม.)
+            </button>
+            <div className="divider" />
+            <button
+              onClick={() => setUnit("%")}
+              className={`toggle-btn ${unit === "%" ? "active" : ""}`}
+            >
+              เปอร์เซ็น (%)
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Chart */}
       <div className="chart-area">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis
               dataKey="time"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#64748B', fontSize: 12 }}
-              dy={10}
+              axisLine={{ stroke: '#E5E7EB' }}
+              tickLine={{ stroke: '#E5E7EB' }}
+              tick={{
+                fill: '#6B7280',
+                fontSize: 12,
+                fontFamily: 'var(--font-kanit), Arial, Helvetica, sans-serif'
+              }}
             />
             <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#64748B', fontSize: 12 }}
+              unit={unit === "%" ? "%" : "ม."}
+              domain={unit === "%" ? [0, 100] : ["auto", "auto"]}
+              axisLine={{ stroke: '#E5E7EB' }}
+              tickLine={{ stroke: '#E5E7EB' }}
+              tick={{
+                fill: '#6B7280',
+                fontSize: 12,
+                fontFamily: 'var(--font-kanit), Arial, Helvetica, sans-serif'
+              }}
             />
             <Tooltip
-              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0px 4px 12px rgba(0,0,0,0.1)' }}
+              contentStyle={{
+                borderRadius: '8px',
+                border: 'none',
+                boxShadow: '0px 4px 12px rgba(0,0,0,0.1)',
+                backgroundColor: '#FFFFFF',
+                fontFamily: 'var(--font-kanit), Arial, Helvetica, sans-serif'
+              }}
+              formatter={(value: number | undefined) =>
+                value === undefined ? 'N/A' : unit === "%" ? `${value.toFixed(1)} %` : `${value} ม.`
+              }
             />
-            {(activeTab === 'p1' || activeTab === 'both') && (
+
+            {showP1 && (
               <Line
                 type="monotone"
                 dataKey="p1"
+                name="P1"
                 stroke={CHART_PRIMARY_COLOR}
                 strokeWidth={2}
                 dot={false}
                 activeDot={{ r: 6 }}
               />
             )}
-            {(activeTab === 'p2' || activeTab === 'both') && (
+            {showP2 && (
               <Line
                 type="monotone"
                 dataKey="p2"
+                name="P2"
                 stroke={CHART_SECONDARY_COLOR}
                 strokeWidth={2}
                 dot={false}
