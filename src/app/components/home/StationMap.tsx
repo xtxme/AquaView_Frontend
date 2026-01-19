@@ -1,11 +1,13 @@
 "use client";
 
+import { forwardRef } from "react";
 import styled from "styled-components";
 import { LeafletStationMap } from "../dashboard/leaflet-station-map";
 import { MOCK_STATIONS, MOCK_REACHES } from "./mock-data";
 
 const StationMap = styled.div`
-  width: 900px;
+  width: 100%;
+  max-width: 900px;
   height: 550px;
   border-radius: 18px;
   background: #ffffff;
@@ -44,12 +46,11 @@ interface StationMapPageProps {
   selectedProvince?: string
 }
 
-export default function StationMapPage({ selectedProvince }: StationMapPageProps) {
+const StationMapForwardRef = forwardRef<HTMLDivElement, StationMapPageProps>(({ selectedProvince }, ref) => {
   return (
-    <StationMap>
+    <StationMap ref={ref}>
       <Header>
-        <h2>แผนที่สถานีเครื่องวัด (4 จุด)</h2>
-        <p>เส้นเชื่อม = ลำดับน้ำ → ปลายน้ำ (เวลาเดินทางของน้ำ)</p>
+        <h2>แผนที่สถานีเครื่องวัด</h2>
       </Header>
       <MapContainer>
         <LeafletStationMap
@@ -61,4 +62,8 @@ export default function StationMapPage({ selectedProvince }: StationMapPageProps
       </MapContainer>
     </StationMap>
   );
-}
+});
+
+StationMapForwardRef.displayName = "StationMapForwardRef";
+
+export default StationMapForwardRef;

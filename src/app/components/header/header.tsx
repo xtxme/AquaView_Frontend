@@ -1,6 +1,7 @@
 "use client";
 
 import styled from "styled-components";
+import Link from "next/link";
 import "leaflet/dist/leaflet.css";
 
 const Header = styled.header`
@@ -37,22 +38,59 @@ const Header = styled.header`
     font-weight: 500;
   }
 
-  .right-text{
+  .content-right{
+    display: flex;
+    align-items: flex-start;
+    gap: 108px;
+    padding-left: 600px;
+    padding-top: 16px;
+  }
+
+  .nav-item{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .nav-text{
     color: #898989;
     font-size: 20px;
     font-style: normal;
     font-weight: 400;
-    cursor: pointer;
+    transition: color 0.3s ease;
   }
-  .content-right{
-    display: flex;
-    align-items: center;
-    gap: 108px;
-    padding-left: 600px;
+
+  .nav-item:hover .nav-text{
+    color: #3273BA;
+  }
+
+  .nav-item.active .nav-text{
+    color: #01205F;
+    font-weight: 600;
+  }
+
+  .triangle-icon{
+    margin-bottom: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .nav-item.active .triangle-icon{
+    opacity: 1;
   }
 `;
 
-export default function AppHeader() {
+const StyledLink = styled(Link)`
+  text-decoration: none;
+`;
+
+interface AppHeaderProps {
+  activePage?: "home" | "dashboard";
+}
+
+export default function AppHeader({ activePage = "home" }: AppHeaderProps) {
   return (
     <Header>
       <div className="content">
@@ -63,8 +101,16 @@ export default function AppHeader() {
         </div>
       </div>
       <div className="content-right">
-        <span className="right-text">Home</span>
-        <span className="right-text">Dashboard</span>
+        <div className={`nav-item ${activePage === "home" ? "active" : ""}`}>
+          <img className="triangle-icon" src="/triangle-down.svg" alt="" />
+          <span className="nav-text">Home</span>
+        </div>
+        <StyledLink href="/dashboard">
+          <div className={`nav-item ${activePage === "dashboard" ? "active" : ""}`}>
+            <img className="triangle-icon" src="/triangle-down.svg" alt="" />
+            <span className="nav-text">Dashboard</span>
+          </div>
+        </StyledLink>
       </div>
     </Header>
   );

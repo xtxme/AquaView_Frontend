@@ -72,20 +72,15 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                 mapRefDirect.current = map
                 console.log('[LeafletStationMap] Map created, adding markers...')
 
-                 const createMarkerIcon = (status: 'green' | 'yellow' | 'red') => {
-                    const icons = {
-                        green: `<svg viewBox="0 0 24 24" fill="#10b981"><path d="M12 2c-5.33 0-8 4-8 8s2.67 8 8 8 8-4 8-8-2.67-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6-6zm0-10c2.21 0 4 1.79 4 4s-1.79 4-4 4-4-1.79-4-4 1.79-4 4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>`,
-                        yellow: `<svg viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2c-5.33 0-8 4-8 8s2.67 8 8 8 8-4 8-8-2.67-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6-6zm0-10c2.21 0 4 1.79 4 4s-1.79 4-4 4-4-1.79-4-4 1.79-4 4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>`,
-                        red: `<svg viewBox="0 0 24 24" fill="#ef4444"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6-6z"/></svg>`
-                    }
-                    
-                    const icon = icons[status]
-                    
+                const createMarkerIcon = (status: string) => {
+                    const color = status === 'red' ? '#ef4444' : status === 'yellow' ? '#f59e0b' : '#10b981'
                     return leaflet.divIcon({
-                        html: `<div style="width:32px;height:32px;">${icon}</div>`,
+                        html: `<div style="width:30px;height:30px;background:${color};border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2 22h20v-2H2v2zm2-2v-4a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v4H4zm4-6a1 1 0 0 0-1-1h8a1 1 0 0 0-1 1h-8zm0-3a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2h-4z"/></svg>
+                        </div>`,
                         className: 'custom-marker',
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 16],
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15],
                     })
                 }
 
@@ -178,7 +173,7 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                             })
 
                             const label = leaflet.marker([midLat, midLng], { icon: travelTimeLabel }).addTo(map)
-                            label.setZIndexOffset(500)
+                            label.setZIndexOffset(1000)
 
                             polyline.bindTooltip(`${upstreamStation.name} → ${downstreamStation.name}<br>เวลาเดินทาง: ${timeText}`, { sticky: true })
 
