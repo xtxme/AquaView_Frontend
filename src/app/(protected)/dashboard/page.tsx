@@ -29,6 +29,7 @@ export default function DashboardPage() {
           <WaterLevelChart
             title="กราฟแสดงระดับน้ำปัจจุบัน"
             data={MOCK_WATER_LEVEL_DATA}
+            predictionStartIndex={18}
             maxValue={WATER_LEVEL_MAX_VALUE}
           />
 

@@ -27,12 +27,14 @@ const Header = styled.div`
     font-size: 18px;
     font-weight: 600;
     margin: 0 0 6px 0;
+    font-family: 'Inter', sans-serif;
   }
 
   p {
     color: rgba(1, 32, 95, 0.7);
     font-size: 14px;
     margin: 0;
+    font-family: 'Inter', sans-serif;
   }
 `;
 

@@ -20,6 +20,7 @@ const Footer = styled.footer`
     font-size: 24px;
     font-style: normal;
     font-weight: 500;
+    font-family: 'Kanit', sans-serif;
   }
 `;
 

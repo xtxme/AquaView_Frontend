@@ -19,6 +19,7 @@ const StyledGaugeCard = styled.div`
   background: #FBF8F4;
   padding: 24px;
   text-align: center;
+  font-family: 'Inter', sans-serif;
 `;
 
 const StyledStationName = styled.h2`
@@ -26,6 +27,7 @@ const StyledStationName = styled.h2`
   font-weight: 600;
   color: #4B5563;
   margin-bottom: 16px;
+  font-family: 'Inter', sans-serif;
 `;
 
 const StyledGaugeContainer = styled.div`
@@ -45,6 +47,7 @@ const StyledScale = styled.div`
   justify-content: space-between;
   font-size: 14px;
   color: #1E3A8A;
+  font-family: 'Inter', sans-serif;
 `;
 
 type StatusType = 'normal' | 'warning' | 'critical';
@@ -56,6 +59,7 @@ const StyledStatusBadge = styled.div<{ status: StatusType }>`
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
+  font-family: 'Inter', sans-serif;
 
   ${({ status }) => {
     switch (status) {
@@ -84,14 +88,17 @@ const StyledStatusBadge = styled.div<{ status: StatusType }>`
 const StyledInfoContainer = styled.div`
   margin-top: 16px;
   font-size: 14px;
+  font-family: 'Inter', sans-serif;
 `;
 
 const StyledInfoLabel = styled.div`
   font-weight: 600;
+  font-family: 'Inter', sans-serif;
 `;
 
 const StyledInfoSub = styled.div`
   color: #9CA3AF;
+  font-family: 'Inter', sans-serif;
 `;
 
 // ============ MAIN COMPONENT ============

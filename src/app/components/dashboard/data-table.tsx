@@ -28,6 +28,7 @@ const TableTitle = styled.h2`
     font-weight: 600;
     color: #1a1a1a;
     margin: 0;
+    font-family: 'Inter', sans-serif;
   }
 `;
 
@@ -45,12 +46,13 @@ const ActionButton = styled.button<{ $variant?: 'primary' | 'secondary' }>`
     border: none;
     font-size: 14px;
     font-weight: 500;
+    font-family: 'Inter', sans-serif;
     cursor: pointer;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    
+
     background: ${props => props.$variant === 'primary' ? '#1e3a8a' : 'white'};
     color: ${props => props.$variant === 'primary' ? 'white' : '#1a1a1a'};
     border: ${props => props.$variant === 'primary' ? 'none' : '1px solid #e0e0e0'};
@@ -92,6 +94,7 @@ const TableHeaderCell = styled.th`
     font-size: 14px;
     font-weight: 600;
     color: #666;
+    font-family: 'Inter', sans-serif;
   }
 `;
 
@@ -100,6 +103,7 @@ const TableCell = styled.td`
     padding: 12px 16px;
     font-size: 14px;
     color: #1a1a1a;
+    font-family: 'Inter', sans-serif;
   }
 `;
 
@@ -110,6 +114,7 @@ const TrendIndicator = styled.span<{ $trend: 'up' | 'down' }>`
     gap: 4px;
     color: ${props => props.$trend === 'up' ? '#f44336' : '#4caf50'};
     font-weight: 500;
+    font-family: 'Inter', sans-serif;
 
     &::before {
       content: '${props => props.$trend === 'up' ? '↗' : '↘'}';

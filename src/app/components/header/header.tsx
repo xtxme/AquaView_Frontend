@@ -31,11 +31,13 @@ const Header = styled.header`
     color: #01205F;
     font-size: 24px;
     font-weight: 500;
+    font-family: 'Kanit', sans-serif;
   }
   .text-eng{
     color: #3273BA;
     font-size: 22px;
     font-weight: 500;
+    font-family: 'Kanit', sans-serif;
   }
 
   .content-right{
@@ -60,6 +62,7 @@ const Header = styled.header`
     font-style: normal;
     font-weight: 400;
     transition: color 0.3s ease;
+    font-family: 'Kanit', sans-serif;
   }
 
   .nav-item:hover .nav-text{
@@ -94,7 +97,7 @@ export default function AppHeader({ activePage = "home" }: AppHeaderProps) {
   return (
     <Header>
       <div className="content">
-        <img className="pic-icon" src="icon.png" alt="icon" />
+        <img className="pic-icon" src="/icon.png" alt="icon" />
         <div className="text-box">
           <span className="text-th">ระบบเฝ้าระวังระดับน้ำ</span>
           <span className="text-eng">Water Level Monitoring System</span>

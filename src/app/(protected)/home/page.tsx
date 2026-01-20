@@ -23,6 +23,7 @@ const Home = styled.div`
     font-style: normal;
     font-weight: 400;
     padding-top: 60px;
+    font-family: 'Inter', sans-serif;
   }
   .header2-text{
     display: flex;
@@ -35,6 +36,7 @@ const Home = styled.div`
     font-weight: 400;
     padding-top: 16px;
     z-index: 1;
+    font-family: 'Inter', sans-serif;
   }
   .content-container {
     width: 90%;
@@ -48,6 +50,7 @@ const Home = styled.div`
     font-style: normal;
     font-weight: 500;
     padding-top: 50px;
+    font-family: 'Inter', sans-serif;
   }
 
 `;

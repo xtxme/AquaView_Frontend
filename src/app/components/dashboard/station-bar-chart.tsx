@@ -33,6 +33,7 @@ const StyledHeaderBadge = styled.div`
   border-radius: 8px;
   font-size: 16px;
   font-weight: 500;
+  font-family: 'Inter', sans-serif;
   box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
 `;
 

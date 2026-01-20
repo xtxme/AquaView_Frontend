@@ -23,6 +23,7 @@ const ProvinceBox = styled.div`
     font-size: 20px;
     font-style: normal;
     font-weight: 500;
+    font-family: 'Inter', sans-serif;
   }
   .controls-row{
     display: flex;
@@ -43,6 +44,7 @@ const ProvinceBox = styled.div`
     font-size: 18px;
     font-weight: 500;
     color: #01205F;
+    font-family: 'Inter', sans-serif;
     cursor: pointer;
     display: flex;
     align-items: center;

@@ -311,6 +311,62 @@ export const MOCK_REACHES = mockReaches
 export const MOCK_THRESHOLDS = mockThresholds
 export const MOCK_ALERTS = mockAlerts
 
+// สร้างข้อมูลคาดการณ์ระดับน้ำ
+export function generatePredictionData(stationId: string, hours: number = 6): Reading[] {
+    const predictions: Reading[] = []
+    const station = mockStations.find(s => s.station_id === stationId)
+
+    if (!station) return predictions
+
+    // ดึงข้อมูลย้อนหลัง 5 ชั่วโมงสุดท้ายเพื่อคำนวณแนวโน้ม
+    const recentReadings = mockReadings
+        .filter(r => r.station_id === stationId)
+        .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime())
+        .slice(-5)
+
+    if (recentReadings.length === 0) return predictions
+
+    // คำนวณแนวโน้ม (trend)
+    const firstReading = recentReadings[0]
+    const lastReading = recentReadings[recentReadings.length - 1]
+    const timeDiffHours = (new Date(lastReading.ts).getTime() - new Date(firstReading.ts).getTime()) / (1000 * 60 * 60)
+    const levelDiff = lastReading.water_level_m - firstReading.water_level_m
+    const trendPerHour = timeDiffHours > 0 ? levelDiff / timeDiffHours : 0
+
+    // สร้างข้อมูลคาดการณ์
+    const now = new Date()
+    for (let i = 1; i <= hours; i++) {
+        const futureTime = new Date(now.getTime() + i * 60 * 60 * 1000)
+        
+        // คำนวณระดับน้ำคาดการณ์ (trend + ความแปรผันเล็กน้อย)
+        const predictedLevel = lastReading.water_level_m + (trendPerHour * i) + (Math.random() * 0.2 - 0.1)
+
+        // ตรวจสอบไม่ให้ต่ำกว่าขีดจำกัดต่ำสุด
+        const minLevel = 0.5
+        const adjustedLevel = Math.max(predictedLevel, minLevel)
+
+        const ultrasonic_depth = station.sensor_height_m + station.bank_level_m - adjustedLevel
+
+        predictions.push({
+            id: `PRED${stationId}${String(i).padStart(2, '0')}`,
+            station_id: stationId,
+            ts: futureTime.toISOString(),
+            ultrasonic_depth_m: parseFloat(ultrasonic_depth.toFixed(3)),
+            water_level_m: parseFloat(adjustedLevel.toFixed(3)),
+            battery_pct: lastReading.battery_pct - (Math.random() * 2), // แบตหมดลงเล็กน้อย
+            raw_payload: JSON.stringify({
+                device: stationId,
+                timestamp: futureTime.toISOString(),
+                depth: ultrasonic_depth,
+                battery: lastReading.battery_pct
+            }),
+            created_at: futureTime.toISOString()
+        })
+    }
+
+    return predictions
+}
+
 export function getMockStationWithLatestReading(stationId: string) {
     const station = mockStations.find(s => s.station_id === stationId)
     if (!station) return null

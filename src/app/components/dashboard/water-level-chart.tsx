@@ -1,23 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import {
   LineChart, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer
+  ResponsiveContainer, ReferenceLine
 } from 'recharts';
 
 type WaterDataPoint = {
   time: string;
+  timestamp: number;
   p1: number;
   p2: number;
+  isPrediction?: boolean;
 };
 
 type WaterLevelChartProps = {
   title?: string;
   data: WaterDataPoint[];
   maxValue?: number;
+  predictionStartIndex?: number; // จุดเริ่มคาดการณ์
 };
 
 // 1. Declare constants for styling
@@ -33,10 +36,10 @@ const StyledChartCard = styled.div`
   border-radius: 18px;
   padding: 24px;
   box-shadow: 0 8px 24px rgba(1, 32, 95, 0.1);
-  font-family: var(--font-kanit), Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
   width: 100%;
   max-width: 900px;
-  height: 550px;
+  min-height: 550px;
   margin: 32px auto 0;
 
   & .chart-header {
@@ -49,7 +52,7 @@ const StyledChartCard = styled.div`
   }
 
   & .chart-title {
-    font-family: inherit;
+    font-family: 'Inter', sans-serif;
     font-size: 20px;
     font-weight: 700;
     color: #1E3A8A;
@@ -76,7 +79,7 @@ const StyledChartCard = styled.div`
   }
 
   & .legend-btn {
-    font-family: inherit;
+    font-family: 'Inter', sans-serif;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -119,7 +122,7 @@ const StyledChartCard = styled.div`
   }
 
   & .toggle-btn {
-    font-family: inherit;
+    font-family: 'Inter', sans-serif;
     padding: 10px 20px;
     border-radius: 9999px;
     border: none;
@@ -163,6 +166,8 @@ const StyledChartCard = styled.div`
   & .chart-area {
     height: 450px;
     width: 100%;
+    min-height: 400px;
+    min-width: 300px;
   }
 `;
 
@@ -170,19 +175,39 @@ export default function WaterLevelChart({
   title = "กราฟแสดงระดับน้ำปัจจุบัน",
   data,
   maxValue = 100,
+  predictionStartIndex,
 }: WaterLevelChartProps) {
   const [unit, setUnit] = useState<"m" | "%">("m");
   const [showP1, setShowP1] = useState(true);
   const [showP2, setShowP2] = useState(true);
 
-  const chartData =
-    unit === "m"
-      ? data
-      : data.map(d => ({
-          ...d,
-          p1: (d.p1 / maxValue) * 100,
-          p2: (d.p2 / maxValue) * 100,
-        }));
+  // แปลงหน่วยข้อมูล
+  const convertedData = useMemo(() => {
+    if (unit === "m") {
+      return data;
+    }
+    return data.map(d => ({
+      ...d,
+      p1: (d.p1 / maxValue) * 100,
+      p2: (d.p2 / maxValue) * 100,
+    }));
+  }, [data, unit, maxValue]);
+
+  // แบ่งข้อมูลเป็น 2 ส่วน: Historical และ Prediction
+  const { historicalData, predictionData } = useMemo(() => {
+    if (!predictionStartIndex || predictionStartIndex <= 0) {
+      return {
+        historicalData: convertedData,
+        predictionData: [] as WaterDataPoint[]
+      };
+    }
+    // Historical: ถึงจุด predictionStartIndex - 1 (ไม่รวมจุดต่อเนื่อง)
+    // Prediction: เริ่มจาก predictionStartIndex - 1 (รวมจุดต่อเนื่อง)
+    return {
+      historicalData: convertedData.slice(0, predictionStartIndex - 1),
+      predictionData: convertedData.slice(predictionStartIndex - 1)
+    };
+  }, [convertedData, predictionStartIndex]);
 
   return (
     <StyledChartCard>
@@ -235,17 +260,22 @@ export default function WaterLevelChart({
       {/* Chart */}
       <div className="chart-area">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
+          <LineChart>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis
-              dataKey="time"
+              dataKey="timestamp"
+              tickFormatter={(value) => {
+                const dataPoint = data.find(d => d.timestamp === value);
+                return dataPoint?.time || '';
+              }}
               axisLine={{ stroke: '#E5E7EB' }}
               tickLine={{ stroke: '#E5E7EB' }}
               tick={{
                 fill: '#6B7280',
                 fontSize: 12,
-                fontFamily: 'var(--font-kanit), Arial, Helvetica, sans-serif'
+                fontFamily: "'Inter', sans-serif"
               }}
+              interval={2}
             />
             <YAxis
               unit={unit === "%" ? "%" : "ม."}
@@ -255,7 +285,7 @@ export default function WaterLevelChart({
               tick={{
                 fill: '#6B7280',
                 fontSize: 12,
-                fontFamily: 'var(--font-kanit), Arial, Helvetica, sans-serif'
+                fontFamily: "'Inter', sans-serif"
               }}
             />
             <Tooltip
@@ -264,20 +294,33 @@ export default function WaterLevelChart({
                 border: 'none',
                 boxShadow: '0px 4px 12px rgba(0,0,0,0.1)',
                 backgroundColor: '#FFFFFF',
-                fontFamily: 'var(--font-kanit), Arial, Helvetica, sans-serif'
+                fontFamily: "'Inter', sans-serif"
               }}
               formatter={(value: number | undefined) =>
                 value === undefined ? 'N/A' : unit === "%" ? `${value.toFixed(1)} %` : `${value} ม.`
               }
             />
 
+            {/* เส้นแนวตั้งแบ่งเวลาปัจจุบัน */}
+            {predictionStartIndex && predictionStartIndex > 0 && (
+              <ReferenceLine
+                x={convertedData[predictionStartIndex - 1]?.time}
+                stroke="#9CA3AF"
+                strokeDasharray="4 4"
+                strokeWidth={1.5}
+                label={{ value: 'เวลาปัจจุบัน', position: 'left', fill: '#6B7280', fontSize: 11, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
+              />
+            )}
+
+            {/* Historical Lines (สีจริง) */}
             {showP1 && (
               <Line
                 type="monotone"
                 dataKey="p1"
+                data={historicalData}
                 name="P1"
                 stroke={CHART_PRIMARY_COLOR}
-                strokeWidth={2}
+                strokeWidth={3}
                 dot={false}
                 activeDot={{ r: 6 }}
               />
@@ -286,11 +329,42 @@ export default function WaterLevelChart({
               <Line
                 type="monotone"
                 dataKey="p2"
+                data={historicalData}
                 name="P2"
                 stroke={CHART_SECONDARY_COLOR}
-                strokeWidth={2}
+                strokeWidth={3}
                 dot={false}
                 activeDot={{ r: 6 }}
+              />
+            )}
+
+            {/* Prediction Lines (สีเทาประ) */}
+            {showP1 && predictionData.length > 0 && (
+              <Line
+                type="monotone"
+                dataKey="p1"
+                data={predictionData}
+                name="P1 (คาดการณ์)"
+                stroke="#9CA3AF"
+                strokeWidth={4}
+                strokeDasharray="8 4"
+                dot={false}
+                activeDot={{ r: 6 }}
+                connectNulls={false}
+              />
+            )}
+            {showP2 && predictionData.length > 0 && (
+              <Line
+                type="monotone"
+                dataKey="p2"
+                data={predictionData}
+                name="P2 (คาดการณ์)"
+                stroke="#9CA3AF"
+                strokeWidth={4}
+                strokeDasharray="8 4"
+                dot={false}
+                activeDot={{ r: 6 }}
+                connectNulls={false}
               />
             )}
           </LineChart>
