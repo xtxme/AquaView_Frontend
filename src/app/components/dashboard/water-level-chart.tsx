@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import {
   LineChart, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend,
+  CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine
 } from 'recharts';
 
@@ -193,21 +193,46 @@ export default function WaterLevelChart({
     }));
   }, [data, unit, maxValue]);
 
-  // แบ่งข้อมูลเป็น 2 ส่วน: Historical และ Prediction
-  const { historicalData, predictionData } = useMemo(() => {
-    if (!predictionStartIndex || predictionStartIndex <= 0) {
-      return {
-        historicalData: convertedData,
-        predictionData: [] as WaterDataPoint[]
-      };
+  // predictionStartIndex คือ index ของ "จุดแรกที่เป็นคาดการณ์"
+  const validPredictionStartIndex = useMemo(() => {
+    if (
+      typeof predictionStartIndex !== "number" ||
+      !Number.isInteger(predictionStartIndex) ||
+      predictionStartIndex <= 0 ||
+      predictionStartIndex >= convertedData.length
+    ) {
+      return null;
     }
-    // Historical: ถึงจุด predictionStartIndex - 1 (ไม่รวมจุดต่อเนื่อง)
-    // Prediction: เริ่มจาก predictionStartIndex - 1 (รวมจุดต่อเนื่อง)
-    return {
-      historicalData: convertedData.slice(0, predictionStartIndex - 1),
-      predictionData: convertedData.slice(predictionStartIndex - 1)
-    };
-  }, [convertedData, predictionStartIndex]);
+    return predictionStartIndex;
+  }, [predictionStartIndex, convertedData.length]);
+
+  const chartData = useMemo(() => {
+    return convertedData.map((point, index) => {
+      const isPrediction = validPredictionStartIndex !== null && index >= validPredictionStartIndex;
+      const isPredictionBridgePoint =
+        validPredictionStartIndex !== null && index === validPredictionStartIndex - 1;
+
+      return {
+        ...point,
+        p1Actual: isPrediction ? null : point.p1,
+        p2Actual: isPrediction ? null : point.p2,
+        p1Prediction: isPrediction || isPredictionBridgePoint ? point.p1 : null,
+        p2Prediction: isPrediction || isPredictionBridgePoint ? point.p2 : null,
+      };
+    });
+  }, [convertedData, validPredictionStartIndex]);
+
+  const predictionDividerIndex = useMemo(() => {
+    if (validPredictionStartIndex === null) {
+      return null;
+    }
+    return Math.max(validPredictionStartIndex - 1, 0);
+  }, [validPredictionStartIndex]);
+
+  const timeByTimestamp = useMemo(
+    () => new Map(chartData.map(point => [point.timestamp, point.time])),
+    [chartData]
+  );
 
   return (
     <StyledChartCard>
@@ -260,14 +285,11 @@ export default function WaterLevelChart({
       {/* Chart */}
       <div className="chart-area">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart>
+          <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis
               dataKey="timestamp"
-              tickFormatter={(value) => {
-                const dataPoint = data.find(d => d.timestamp === value);
-                return dataPoint?.time || '';
-              }}
+              tickFormatter={(value: number) => timeByTimestamp.get(value) || ""}
               axisLine={{ stroke: '#E5E7EB' }}
               tickLine={{ stroke: '#E5E7EB' }}
               tick={{
@@ -289,22 +311,69 @@ export default function WaterLevelChart({
               }}
             />
             <Tooltip
-              contentStyle={{
-                borderRadius: '8px',
-                border: 'none',
-                boxShadow: '0px 4px 12px rgba(0,0,0,0.1)',
-                backgroundColor: '#FFFFFF',
-                fontFamily: "'Inter', sans-serif"
+              content={({ active, payload, label }) => {
+                if (!active || !payload || payload.length === 0) {
+                  return null;
+                }
+
+                const hasPredictionSeries = payload.some((entry) =>
+                  String(entry?.name || "").includes("(คาดการณ์)")
+                );
+
+                const visiblePayload = payload.filter((entry) => {
+                  if (typeof entry?.value !== "number") return false;
+                  if (!hasPredictionSeries) return true;
+                  return String(entry?.name || "").includes("(คาดการณ์)");
+                });
+
+                if (visiblePayload.length === 0) {
+                  return null;
+                }
+
+                const timeLabel =
+                  typeof label === "number" ? timeByTimestamp.get(label) : undefined;
+
+                return (
+                  <div
+                    style={{
+                      borderRadius: '8px',
+                      border: 'none',
+                      boxShadow: '0px 4px 12px rgba(0,0,0,0.1)',
+                      backgroundColor: '#FFFFFF',
+                      fontFamily: "'Inter', sans-serif",
+                      padding: '12px',
+                    }}
+                  >
+                    <p style={{ margin: '0 0 8px 0', color: '#111827', fontWeight: 600 }}>
+                      {timeLabel ? `เวลา ${timeLabel}` : 'เวลา'}
+                    </p>
+                    {visiblePayload.map((entry) => {
+                      const value = entry.value as number;
+                      const formattedValue =
+                        unit === "%" ? `${value.toFixed(1)} %` : `${value} ม.`;
+
+                      return (
+                        <p
+                          key={`${entry.dataKey}-${entry.name}`}
+                          style={{
+                            margin: '0 0 6px 0',
+                            color: entry.color || '#374151',
+                            fontWeight: 500,
+                          }}
+                        >
+                          {`${entry.name}: ${formattedValue}`}
+                        </p>
+                      );
+                    })}
+                  </div>
+                );
               }}
-              formatter={(value: number | undefined) =>
-                value === undefined ? 'N/A' : unit === "%" ? `${value.toFixed(1)} %` : `${value} ม.`
-              }
             />
 
             {/* เส้นแนวตั้งแบ่งเวลาปัจจุบัน */}
-            {predictionStartIndex && predictionStartIndex > 0 && (
+            {predictionDividerIndex !== null && (
               <ReferenceLine
-                x={convertedData[predictionStartIndex - 1]?.time}
+                x={chartData[predictionDividerIndex]?.timestamp}
                 stroke="#9CA3AF"
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
@@ -316,51 +385,49 @@ export default function WaterLevelChart({
             {showP1 && (
               <Line
                 type="monotone"
-                dataKey="p1"
-                data={historicalData}
+                dataKey="p1Actual"
                 name="P1"
                 stroke={CHART_PRIMARY_COLOR}
                 strokeWidth={3}
                 dot={false}
                 activeDot={{ r: 6 }}
+                connectNulls={false}
               />
             )}
             {showP2 && (
               <Line
                 type="monotone"
-                dataKey="p2"
-                data={historicalData}
+                dataKey="p2Actual"
                 name="P2"
                 stroke={CHART_SECONDARY_COLOR}
                 strokeWidth={3}
                 dot={false}
                 activeDot={{ r: 6 }}
+                connectNulls={false}
               />
             )}
 
             {/* Prediction Lines (สีเทาประ) */}
-            {showP1 && predictionData.length > 0 && (
+            {showP1 && validPredictionStartIndex !== null && (
               <Line
                 type="monotone"
-                dataKey="p1"
-                data={predictionData}
+                dataKey="p1Prediction"
                 name="P1 (คาดการณ์)"
                 stroke="#9CA3AF"
-                strokeWidth={4}
+                strokeWidth={3}
                 strokeDasharray="8 4"
                 dot={false}
                 activeDot={{ r: 6 }}
                 connectNulls={false}
               />
             )}
-            {showP2 && predictionData.length > 0 && (
+            {showP2 && validPredictionStartIndex !== null && (
               <Line
                 type="monotone"
-                dataKey="p2"
-                data={predictionData}
+                dataKey="p2Prediction"
                 name="P2 (คาดการณ์)"
                 stroke="#9CA3AF"
-                strokeWidth={4}
+                strokeWidth={3}
                 strokeDasharray="8 4"
                 dot={false}
                 activeDot={{ r: 6 }}

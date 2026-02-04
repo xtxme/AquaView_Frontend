@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import WaterLevelGauge, { WaterLevelGaugeProps } from './water-level-gauge';
 
@@ -42,18 +42,23 @@ const StyledCarouselContainer = styled.div`
   align-items: center;
   gap: 16px;
   position: relative;
+  width: 100%;
+  justify-content: center;
 `;
 
-const StyledScroller = styled.div`
+const StyledPageView = styled.div`
   display: flex;
   gap: 20px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  scrollbar-width: none; /* Firefox */
+  width: min(1100px, calc(100vw - 160px));
+  min-height: 640px;
+  justify-content: center;
+`;
 
-  &::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
-  }
+const StyledPageIndicator = styled.div`
+  margin-top: 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #64748B;
 `;
 
 const StyledNavButton = styled.button`
@@ -89,8 +94,6 @@ const StyledNavButton = styled.button`
  * แปลงข้อมูลจาก lib/mock-data.ts ให้เข้ากับ WaterLevelGaugeProps
  */
 function getWaterLevelGaugeData(): WaterLevelGaugeProps[] {
-  const now = new Date();
-
   return MOCK_STATIONS.map((station) => {
     // หา reading ล่าสุดของสถานี
     const latestReading = MOCK_READINGS
@@ -105,10 +108,17 @@ function getWaterLevelGaugeData(): WaterLevelGaugeProps[] {
     );
 
     // แปลงเวลาเป็น format "HH.MM น."
-    const readingTime = new Date(latestReading?.ts || now);
-    const hours = readingTime.getHours();
-    const minutes = readingTime.getMinutes();
-    const updatedAt = `${hours}.${minutes} น.`;
+    const readingTime = latestReading ? new Date(latestReading.ts) : null;
+    const updatedAt = readingTime
+      ? `${readingTime
+          .toLocaleTimeString('th-TH', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Asia/Bangkok',
+          })
+          .replace(':', '.')} น.`
+      : '00.00 น.';
 
     return {
       station: station.name,
@@ -123,19 +133,28 @@ function getWaterLevelGaugeData(): WaterLevelGaugeProps[] {
 
 // ============ MAIN COMPONENT ============
 export function StationBarChart() {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-
   const stations = getWaterLevelGaugeData();
+  const ITEMS_PER_PAGE = 4;
+  const [currentPage, setCurrentPage] = useState(0);
 
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollerRef.current) {
-      const scrollAmount = 300;
-      scrollerRef.current.scrollBy({
-        left: direction === 'right' ? scrollAmount : -scrollAmount,
-        behavior: 'smooth',
-      });
+  const totalPages = Math.max(1, Math.ceil(stations.length / ITEMS_PER_PAGE));
+
+  const visibleStations = useMemo(() => {
+    const start = currentPage * ITEMS_PER_PAGE;
+    return stations.slice(start, start + ITEMS_PER_PAGE);
+  }, [stations, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages - 1) {
+      setCurrentPage(Math.max(0, totalPages - 1));
     }
-  };
+  }, [currentPage, totalPages]);
+
+  const isFirstPage = currentPage === 0;
+  const isLastPage = currentPage >= totalPages - 1;
+
+  const goPrevious = () => setCurrentPage((prev) => Math.max(0, prev - 1));
+  const goNext = () => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
 
   return (
     <StyledDashboardSection>
@@ -147,7 +166,7 @@ export function StationBarChart() {
 
       <StyledCarouselContainer>
         {/* Left Navigation Button */}
-        <StyledNavButton onClick={() => scroll('left')} aria-label="Previous">
+        <StyledNavButton onClick={goPrevious} aria-label="Previous" disabled={isFirstPage}>
           <svg
             width="24"
             height="24"
@@ -162,15 +181,15 @@ export function StationBarChart() {
           </svg>
         </StyledNavButton>
 
-        {/* Gauge Cards Scroller */}
-        <StyledScroller ref={scrollerRef}>
-          {stations.map((station, index) => (
-            <WaterLevelGauge key={index} {...station} />
+        {/* Gauge Cards: show up to 4 cards per page */}
+        <StyledPageView>
+          {visibleStations.map((station) => (
+            <WaterLevelGauge key={station.station} {...station} />
           ))}
-        </StyledScroller>
+        </StyledPageView>
 
         {/* Right Navigation Button */}
-        <StyledNavButton onClick={() => scroll('right')} aria-label="Next">
+        <StyledNavButton onClick={goNext} aria-label="Next" disabled={isLastPage}>
           <svg
             width="24"
             height="24"
@@ -185,6 +204,12 @@ export function StationBarChart() {
           </svg>
         </StyledNavButton>
       </StyledCarouselContainer>
+
+      {totalPages > 1 && (
+        <StyledPageIndicator>
+          หน้า {currentPage + 1} / {totalPages}
+        </StyledPageIndicator>
+      )}
     </StyledDashboardSection>
   );
 }

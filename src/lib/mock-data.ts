@@ -3,6 +3,20 @@
 
 import { Station, Reading, Reach, Threshold, Alert } from './types'
 
+const MOCK_NOW = new Date('2026-02-04T13:42:00.000Z')
+
+function deterministicRandom(...parts: Array<string | number>): number {
+    const seed = parts.join('|')
+    let hash = 2166136261
+
+    for (let i = 0; i < seed.length; i++) {
+        hash ^= seed.charCodeAt(i)
+        hash = Math.imul(hash, 16777619)
+    }
+
+    return (hash >>> 0) / 4294967295
+}
+
 // ========== STATIONS ==========
 const mockStations: Station[] = [
     {
@@ -63,7 +77,7 @@ const mockStations: Station[] = [
 // สร้างข้อมูลที่แสดงภาวะน้ำหลาก: น้ำขึ้นจากสถานีต้นน้ำ และเดินทางไปสถานีปลายน้ำ
 const mockReadings: Reading[] = []
 
-const now = new Date()
+const now = MOCK_NOW
 const hoursBack = 24
 
 // สร้างข้อมูลสำหรับแต่ละสถานี
@@ -77,32 +91,35 @@ mockStations.forEach((station, stationIndex) => {
 
         let waterLevel: number
         let status: 'green' | 'yellow' | 'red'
+        const waterNoise = deterministicRandom(station.station_id, i, 'water')
 
         if (adjustedHour < 0) {
             // ยังไม่มีน้ำมาถึง (สถานีปลายน้ำ)
-            waterLevel = 0.8 + Math.random() * 0.3 // 0.8-1.1m (ปกติ)
+            waterLevel = 0.8 + waterNoise * 0.3 // 0.8-1.1m (ปกติ)
             status = 'green'
         } else if (adjustedHour >= 18) {
             // ภาวะปกติ
-            waterLevel = 1.0 + Math.random() * 0.5 // 1.0-1.5m
+            waterLevel = 1.0 + waterNoise * 0.5 // 1.0-1.5m
             status = 'green'
         } else if (adjustedHour >= 12) {
             // เริ่มมีน้ำขึ้น
             const riseRate = (18 - adjustedHour) / 6
-            waterLevel = 1.5 + riseRate * 1.5 + Math.random() * 0.3 // 1.5-3.3m
+            waterLevel = 1.5 + riseRate * 1.5 + waterNoise * 0.3 // 1.5-3.3m
             status = waterLevel / station.bank_level_m > 0.7 ? 'yellow' : 'green'
         } else if (adjustedHour >= 6) {
             // น้ำสูงสุด (peak)
-            waterLevel = 3.2 + Math.random() * 0.8 // 3.2-4.0m
+            waterLevel = 3.2 + waterNoise * 0.8 // 3.2-4.0m
             status = waterLevel / station.bank_level_m > 0.8 ? 'red' : 'yellow'
         } else {
             // น้ำเริ่มลด
             const fallRate = adjustedHour / 6
-            waterLevel = 4.0 - (1 - fallRate) * 1.0 + Math.random() * 0.3 // 3.0-4.0m
+            waterLevel = 4.0 - (1 - fallRate) * 1.0 + waterNoise * 0.3 // 3.0-4.0m
             status = waterLevel / station.bank_level_m > 0.7 ? 'yellow' : 'green'
         }
 
         const ultrasonic_depth = station.sensor_height_m + station.bank_level_m - waterLevel
+        const batteryNoise = deterministicRandom(station.station_id, i, 'battery')
+        const payloadBatteryNoise = deterministicRandom(station.station_id, i, 'payload-battery')
 
         mockReadings.push({
             id: `R${stationIndex}${String(i).padStart(3, '0')}`,
@@ -110,12 +127,12 @@ mockStations.forEach((station, stationIndex) => {
             ts: timestamp.toISOString(),
             ultrasonic_depth_m: parseFloat(ultrasonic_depth.toFixed(3)),
             water_level_m: parseFloat(waterLevel.toFixed(3)),
-            battery_pct: 85 + Math.random() * 10,
+            battery_pct: 85 + batteryNoise * 10,
             raw_payload: JSON.stringify({
                 device: station.station_id,
                 timestamp: timestamp.toISOString(),
                 depth: ultrasonic_depth,
-                battery: 85 + Math.random() * 10
+                battery: 85 + payloadBatteryNoise * 10
             }),
             created_at: timestamp.toISOString()
         })
@@ -282,7 +299,7 @@ function calculateDelta(current: number, previous: number | null): number {
 // ตัวอย่างข้อมูลสำหรับ Ingestion API
 const sampleIngestPayload = {
     device_id: "ST001",
-    timestamp: new Date().toISOString(),
+    timestamp: MOCK_NOW.toISOString(),
     ultrasonic_depth_m: 1.234,
     battery_pct: 87.5,
     temperature_c: 28.5,
@@ -334,12 +351,13 @@ export function generatePredictionData(stationId: string, hours: number = 6): Re
     const trendPerHour = timeDiffHours > 0 ? levelDiff / timeDiffHours : 0
 
     // สร้างข้อมูลคาดการณ์
-    const now = new Date()
+    const predictionStartTime = new Date(lastReading.ts)
     for (let i = 1; i <= hours; i++) {
-        const futureTime = new Date(now.getTime() + i * 60 * 60 * 1000)
+        const futureTime = new Date(predictionStartTime.getTime() + i * 60 * 60 * 1000)
         
         // คำนวณระดับน้ำคาดการณ์ (trend + ความแปรผันเล็กน้อย)
-        const predictedLevel = lastReading.water_level_m + (trendPerHour * i) + (Math.random() * 0.2 - 0.1)
+        const predictedLevelVariance = deterministicRandom('prediction', stationId, i, 'level') * 0.2 - 0.1
+        const predictedLevel = lastReading.water_level_m + (trendPerHour * i) + predictedLevelVariance
 
         // ตรวจสอบไม่ให้ต่ำกว่าขีดจำกัดต่ำสุด
         const minLevel = 0.5
@@ -353,7 +371,7 @@ export function generatePredictionData(stationId: string, hours: number = 6): Re
             ts: futureTime.toISOString(),
             ultrasonic_depth_m: parseFloat(ultrasonic_depth.toFixed(3)),
             water_level_m: parseFloat(adjustedLevel.toFixed(3)),
-            battery_pct: lastReading.battery_pct - (Math.random() * 2), // แบตหมดลงเล็กน้อย
+            battery_pct: lastReading.battery_pct - (deterministicRandom('prediction', stationId, i, 'battery') * 2), // แบตหมดลงเล็กน้อย
             raw_payload: JSON.stringify({
                 device: stationId,
                 timestamp: futureTime.toISOString(),
