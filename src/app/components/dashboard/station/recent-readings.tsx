@@ -5,10 +5,10 @@ import styled from 'styled-components';
 import { Reading } from '@/lib/types';
 
 const Container = styled.div`
-  background: white;
+  background: var(--color-surface);
   border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 8px 24px rgba(1, 32, 95, 0.1);
+  box-shadow: var(--shadow-card);
   margin-top: 32px;
 `;
 
@@ -16,7 +16,7 @@ const Title = styled.h2`
   font-family: 'Inter', sans-serif;
   font-size: 20px;
   font-weight: 700;
-  color: #1E3A8A;
+  color: var(--color-primary);
   margin-bottom: 24px;
 `;
 
@@ -27,25 +27,25 @@ const TableWrapper = styled.div`
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
 `;
 
 const Th = styled.th`
   text-align: left;
   padding: 12px 16px;
-  border-bottom: 1px solid #E5E7EB;
-  color: #6B7280;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
 `;
 
 const Td = styled.td`
   padding: 16px;
-  border-bottom: 1px solid #F3F4F6;
-  color: #1F2937;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
 
   &:last-child {
     text-align: right;
@@ -58,13 +58,13 @@ const TrendBadge = styled.span<{ direction: 'up' | 'down' | 'stable' }>`
   gap: 4px;
   font-size: 12px;
   font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
 
   ${({ direction }) => {
         switch (direction) {
-            case 'up': return 'color: #DC2626;'; // Rising water is usually bad
-            case 'down': return 'color: #059669;';
-            default: return 'color: #6B7280;';
+            case 'up': return 'color: var(--status-danger);'; // Rising water is usually bad
+            case 'down': return 'color: var(--status-safe);';
+            default: return 'color: var(--color-text-muted);';
         }
     }}
 `;

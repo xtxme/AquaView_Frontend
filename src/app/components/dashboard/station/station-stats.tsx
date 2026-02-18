@@ -20,10 +20,10 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled.div`
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -33,22 +33,22 @@ const CardHeader = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #6B7280;
-  font-family: 'Inter', sans-serif;
+  color: var(--color-text-muted);
+  font-family: 'Kanit', sans-serif;
   font-size: 14px;
 `;
 
 const Value = styled.div`
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
   font-size: 24px;
   font-weight: 600;
-  color: #1F2937;
+  color: var(--color-text);
 `;
 
 const SubText = styled.div<{ color?: string }>`
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
   font-size: 12px;
-  color: ${({ color }) => color || '#9CA3AF'};
+  color: ${({ color }) => color || 'var(--color-text-subtle)'};
 `;
 
 interface StationStatsProps {
@@ -88,7 +88,7 @@ export const StationStats: React.FC<StationStatsProps> = ({ waterLevel, bankLeve
           <span>ความจุลำน้ำ</span>
         </CardHeader>
         <Value>{percentage.toFixed(1)}%</Value>
-        <SubText color={percentage > 80 ? '#DC2626' : '#059669'}>
+        <SubText color={percentage > 80 ? 'var(--status-danger)' : 'var(--status-safe)'}>
           {percentage > 80 ? 'ใกล้ล้นตลิ่ง' : 'อยู่ในเกณฑ์ปกติ'}
         </SubText>
       </StatCard>

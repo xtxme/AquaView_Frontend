@@ -14,20 +14,24 @@ export type WaterLevelGaugeProps = {
 
 // ============ STYLED COMPONENTS ============
 const StyledGaugeCard = styled.div`
-  width: 260px;
+  width: min(260px, 100%);
   border-radius: 24px;
-  background: #FBF8F4;
+  background: var(--color-surface-soft);
   padding: 24px;
   text-align: center;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
+
+  @media (max-width: 700px) {
+    padding: 18px;
+  }
 `;
 
 const StyledStationName = styled.h2`
   font-size: 18px;
   font-weight: 600;
-  color: #4B5563;
+  color: var(--color-text-muted);
   margin-bottom: 16px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
 `;
 
 const StyledGaugeContainer = styled.div`
@@ -35,6 +39,11 @@ const StyledGaugeContainer = styled.div`
   margin: 0 auto;
   height: 420px;
   width: 140px;
+
+  @media (max-width: 700px) {
+    width: 124px;
+    height: 390px;
+  }
 `;
 
 const StyledScale = styled.div`
@@ -46,8 +55,8 @@ const StyledScale = styled.div`
   flex-direction: column;
   justify-content: space-between;
   font-size: 14px;
-  color: #1E3A8A;
-  font-family: 'Inter', sans-serif;
+  color: var(--color-primary);
+  font-family: 'Kanit', sans-serif;
 `;
 
 type StatusType = 'normal' | 'warning' | 'critical';
@@ -59,27 +68,27 @@ const StyledStatusBadge = styled.div<{ status: StatusType }>`
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
 
   ${({ status }) => {
     switch (status) {
       case 'critical':
         return `
-          background: #FEE2E2;
-          color: #DC2626;
-          border: 1px solid #FCA5A5;
+          background: var(--status-danger-bg);
+          color: var(--status-danger);
+          border: 1px solid var(--status-danger-border);
         `;
       case 'warning':
         return `
-          background: #FEF3C7;
-          color: #D97706;
-          border: 1px solid #FBBF24;
+          background: var(--status-warning-bg);
+          color: var(--status-warning);
+          border: 1px solid var(--status-warning-border);
         `;
       default:
         return `
-          background: #DCFCE7;
-          color: #16A34A;
-          border: 1px solid #86EFAC;
+          background: var(--status-safe-bg);
+          color: var(--status-safe);
+          border: 1px solid var(--status-safe-border);
         `;
     }
   }}
@@ -88,17 +97,17 @@ const StyledStatusBadge = styled.div<{ status: StatusType }>`
 const StyledInfoContainer = styled.div`
   margin-top: 16px;
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
 `;
 
 const StyledInfoLabel = styled.div`
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
 `;
 
 const StyledInfoSub = styled.div`
-  color: #9CA3AF;
-  font-family: 'Inter', sans-serif;
+  color: var(--color-text-subtle);
+  font-family: 'Kanit', sans-serif;
 `;
 
 // ============ MAIN COMPONENT ============
@@ -162,8 +171,8 @@ export default function WaterLevelGauge({
             width="80"
             height="400"
             rx="20"
-            fill="#EAF2FF"
-            stroke="#0F2A66"
+            fill="var(--color-section)"
+            stroke="var(--color-primary)"
             strokeWidth="3"
           />
 
@@ -174,7 +183,7 @@ export default function WaterLevelGauge({
             width="80"
             height={waterHeight}
             rx="20"
-            fill="#5A86C5"
+            fill="var(--color-secondary)"
           />
 
           {/* Warning Line */}
@@ -183,7 +192,7 @@ export default function WaterLevelGauge({
             x2="110"
             y1={warningY}
             y2={warningY}
-            stroke="#F6B73C"
+            stroke="var(--status-warning)"
             strokeWidth="3"
           />
 
@@ -193,7 +202,7 @@ export default function WaterLevelGauge({
             x2="110"
             y1={dangerY}
             y2={dangerY}
-            stroke="#F44336"
+            stroke="var(--status-danger)"
             strokeWidth="3"
           />
 
@@ -204,7 +213,7 @@ export default function WaterLevelGauge({
             width="60"
             height="26"
             rx="6"
-            fill="#0F2A66"
+            fill="var(--color-primary)"
           />
           <text
             x="70"

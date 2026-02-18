@@ -15,7 +15,7 @@ const HeaderWrap = styled.div`
 
   .station-section-title {
     margin: 0;
-    color: #0b2d68;
+    color: var(--color-primary);
     font-size: 34px;
     font-weight: 600;
     line-height: 1.2;

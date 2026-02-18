@@ -67,8 +67,8 @@ const LineChartExample = ({ isAnimationActive = true }) => (
         <YAxis width="auto" />
         <Tooltip />
         <Legend />
-        <Line type="monotone" dataKey="pv" stroke="#8884d8" isAnimationActive={isAnimationActive} />
-        <Line type="monotone" dataKey="uv" stroke="#82ca9d" isAnimationActive={isAnimationActive} />
+        <Line type="monotone" dataKey="pv" stroke="var(--chart-line-primary)" isAnimationActive={isAnimationActive} />
+        <Line type="monotone" dataKey="uv" stroke="var(--chart-line-secondary)" isAnimationActive={isAnimationActive} />
         {/* <RechartsDevtools /> -- Commented out as it might not be installed */}
     </LineChart>
 );

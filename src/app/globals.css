@@ -3,20 +3,51 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --background: #dce7f6;
+  --foreground: #0f234f;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-primary: #0f2f6a;
+  --color-primary-strong: #0b2557;
+  --color-secondary: #2f6db2;
+  --color-accent: #4f8dd8;
+
+  --color-page: #dce7f6;
+  --color-section: #e8effa;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f6f8fc;
+  --color-border: #cfdae9;
+
+  --color-text: #0f234f;
+  --color-text-muted: #51627e;
+  --color-text-subtle: #7b8ca6;
+
+  --status-danger: #dc2626;
+  --status-warning: #d97706;
+  --status-safe: #16a34a;
+  --status-danger-bg: #fee2e2;
+  --status-danger-border: #fca5a5;
+  --status-warning-bg: #fef3c7;
+  --status-warning-border: #fbbf24;
+  --status-safe-bg: #dcfce7;
+  --status-safe-border: #86efac;
+
+  --chart-line-primary: #2f6db2;
+  --chart-line-secondary: #5f8fc4;
+  --chart-line-prediction: #7b8ca6;
+  --gradient-hover-soft: linear-gradient(135deg, #edf5ff 0%, #e4eefb 100%);
+
+  --shadow-soft: 0 1px 3px rgba(15, 35, 79, 0.1);
+  --shadow-card: 0 8px 24px rgba(15, 35, 79, 0.12);
+  --shadow-popover: 0 8px 32px rgba(15, 35, 79, 0.16), 0 2px 8px rgba(15, 35, 79, 0.1);
+  --ring-secondary-soft: 0 0 0 4px rgba(47, 109, 178, 0.18);
+  --ring-secondary-strong: 0 0 0 4px rgba(47, 109, 178, 0.24);
+  --overlay-white-strong: rgba(255, 255, 255, 0.45);
+  --overlay-white-soft: rgba(255, 255, 255, 0.33);
 }
 
 body {
-  background: #e1ebf7;
-  color: var(--foreground);
+  background: var(--color-page);
+  color: var(--color-text);
   font-family: var(--font-kanit), Arial, Helvetica, sans-serif;
 }
 

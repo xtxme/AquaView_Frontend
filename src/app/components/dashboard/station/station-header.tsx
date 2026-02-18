@@ -9,7 +9,7 @@ const HeaderContainer = styled.div`
   flex-wrap: wrap;
   align-items: center;
   gap: 24px;
-  color: #1E3A8A;
+  color: var(--color-primary);
   margin-bottom: 24px;
 `;
 
@@ -17,7 +17,7 @@ const InfoItem = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
   font-size: 16px;
   font-weight: 600;
 `;
@@ -25,7 +25,7 @@ const InfoItem = styled.div`
 const IconWrapper = styled.div`
   display: flex;
   align-items: center;
-  color: #2563EB;
+  color: var(--color-secondary);
   min-width: 20px;
   min-height: 20px;
 `;
@@ -36,6 +36,7 @@ const StatusBadge = styled.div<{ status: 'normal' | 'warning' | 'critical' }>`
   border-radius: 8px;
   margin-left: auto;
   font-family: 'Inter', sans-serif;
+  font-family: 'Kanit', sans-serif;
   font-size: 14px;
   font-weight: 500;
 
@@ -43,21 +44,21 @@ const StatusBadge = styled.div<{ status: 'normal' | 'warning' | 'critical' }>`
         switch (status) {
             case 'normal':
                 return `
-          background-color: #DCFCE7;
-          color: #16A34A;
-          border: 1px solid #86EFAC;
+          background-color: var(--status-safe-bg);
+          color: var(--status-safe);
+          border: 1px solid var(--status-safe-border);
         `;
             case 'warning':
                 return `
-          background-color: #FEF3C7;
-          color: #D97706;
-          border: 1px solid #FBBF24;
+          background-color: var(--status-warning-bg);
+          color: var(--status-warning);
+          border: 1px solid var(--status-warning-border);
         `;
             case 'critical':
                 return `
-          background-color: #FEE2E2;
-          color: #DC2626;
-          border: 1px solid #FCA5A5;
+          background-color: var(--status-danger-bg);
+          color: var(--status-danger);
+          border: 1px solid var(--status-danger-border);
         `;
         }
     }}

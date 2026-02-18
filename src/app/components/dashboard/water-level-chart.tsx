@@ -24,22 +24,22 @@ type WaterLevelChartProps = {
 };
 
 // 1. Declare constants for styling
-const CHART_PRIMARY_COLOR = '#5B6CFF'; // Blue for P1
-const CHART_SECONDARY_COLOR = '#E23BAA'; // Pink for P2
-const ACTIVE_BUTTON_COLOR = '#2563EB';
-const INACTIVE_BUTTON_BG = '#F3F4F6';
-const INACTIVE_BUTTON_TEXT = '#6B7280';
+const CHART_PRIMARY_COLOR = 'var(--chart-line-primary)';
+const CHART_SECONDARY_COLOR = 'var(--chart-line-secondary)';
+const ACTIVE_BUTTON_COLOR = 'var(--color-secondary)';
+const INACTIVE_BUTTON_BG = 'var(--color-surface-soft)';
+const INACTIVE_BUTTON_TEXT = 'var(--color-text-muted)';
 
 // 2. Styled Components
 const StyledChartCard = styled.div`
-  background: #FFFFFF;
+  background: var(--color-surface);
   border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 8px 24px rgba(1, 32, 95, 0.1);
-  font-family: 'Inter', sans-serif;
+  box-shadow: var(--shadow-card);
+  font-family: 'Kanit', sans-serif;
   width: 100%;
   max-width: 900px;
-  min-height: 550px;
+  min-height: 520px;
   margin: 32px auto 0;
 
   & .chart-header {
@@ -52,10 +52,10 @@ const StyledChartCard = styled.div`
   }
 
   & .chart-title {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Kanit', sans-serif;
     font-size: 20px;
     font-weight: 700;
-    color: #1E3A8A;
+    color: var(--color-primary);
     margin: 0;
     flex: 1;
   }
@@ -79,27 +79,27 @@ const StyledChartCard = styled.div`
   }
 
   & .legend-btn {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Kanit', sans-serif;
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
     border-radius: 8px;
-    border: 1px solid #E5E7EB;
-    background: #FFFFFF;
-    color: #374151;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
 
     &:hover {
-      border-color: #2563EB;
+      border-color: var(--color-secondary);
     }
 
     &.active {
       border-color: transparent;
-      background: #F3F4F6;
+      background: var(--color-surface-soft);
     }
 
     &.p1 {
@@ -122,7 +122,7 @@ const StyledChartCard = styled.div`
   }
 
   & .toggle-btn {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Kanit', sans-serif;
     padding: 10px 20px;
     border-radius: 9999px;
     border: none;
@@ -147,27 +147,61 @@ const StyledChartCard = styled.div`
     }
 
     &:hover {
-      background: #E5E7EB;
+      background: var(--color-border);
     }
 
     &.active {
       background: ${ACTIVE_BUTTON_COLOR};
       color: white;
-      box-shadow: 0px 2px 8px rgba(37, 99, 235, 0.3);
+      box-shadow: var(--shadow-soft);
     }
   }
 
   & .divider {
     width: 1px;
     height: 24px;
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--color-border);
   }
 
   & .chart-area {
     height: 450px;
     width: 100%;
-    min-height: 400px;
-    min-width: 300px;
+    min-height: 340px;
+    min-width: 0;
+  }
+
+  & .empty-state {
+    height: 100%;
+    border: 1px dashed var(--color-border);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    font-size: 16px;
+    text-align: center;
+    padding: 16px;
+  }
+
+  @media (max-width: 900px) {
+    padding: 18px;
+    min-height: 420px;
+
+    & .chart-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    & .header-controls {
+      width: 100%;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    & .chart-area {
+      height: 320px;
+    }
   }
 `;
 
@@ -250,6 +284,7 @@ export default function WaterLevelChart({
             <button
               className={`legend-btn p1 ${showP1 ? "active" : ""}`}
               onClick={() => setShowP1(!showP1)}
+              aria-pressed={showP1}
             >
               <span className="legend-dot"></span>
               P1
@@ -257,6 +292,7 @@ export default function WaterLevelChart({
             <button
               className={`legend-btn p2 ${showP2 ? "active" : ""}`}
               onClick={() => setShowP2(!showP2)}
+              aria-pressed={showP2}
             >
               <span className="legend-dot"></span>
               P2
@@ -268,6 +304,7 @@ export default function WaterLevelChart({
             <button
               onClick={() => setUnit("m")}
               className={`toggle-btn ${unit === "m" ? "active" : ""}`}
+              aria-pressed={unit === "m"}
             >
               เมตร (ม.)
             </button>
@@ -275,6 +312,7 @@ export default function WaterLevelChart({
             <button
               onClick={() => setUnit("%")}
               className={`toggle-btn ${unit === "%" ? "active" : ""}`}
+              aria-pressed={unit === "%"}
             >
               เปอร์เซ็น (%)
             </button>
@@ -284,30 +322,33 @@ export default function WaterLevelChart({
 
       {/* Chart */}
       <div className="chart-area">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+        {chartData.length === 0 ? (
+          <div className="empty-state">ไม่พบข้อมูลกราฟตามตัวกรองที่เลือก</div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
             <XAxis
               dataKey="timestamp"
               tickFormatter={(value: number) => timeByTimestamp.get(value) || ""}
-              axisLine={{ stroke: '#E5E7EB' }}
-              tickLine={{ stroke: '#E5E7EB' }}
+              axisLine={{ stroke: 'var(--color-border)' }}
+              tickLine={{ stroke: 'var(--color-border)' }}
               tick={{
-                fill: '#6B7280',
+                fill: 'var(--color-text-muted)',
                 fontSize: 12,
-                fontFamily: "'Inter', sans-serif"
+                fontFamily: "'Kanit', sans-serif"
               }}
               interval={2}
             />
             <YAxis
               unit={unit === "%" ? "%" : "ม."}
               domain={unit === "%" ? [0, 100] : ["auto", "auto"]}
-              axisLine={{ stroke: '#E5E7EB' }}
-              tickLine={{ stroke: '#E5E7EB' }}
+              axisLine={{ stroke: 'var(--color-border)' }}
+              tickLine={{ stroke: 'var(--color-border)' }}
               tick={{
-                fill: '#6B7280',
+                fill: 'var(--color-text-muted)',
                 fontSize: 12,
-                fontFamily: "'Inter', sans-serif"
+                fontFamily: "'Kanit', sans-serif"
               }}
             />
             <Tooltip
@@ -338,13 +379,13 @@ export default function WaterLevelChart({
                     style={{
                       borderRadius: '8px',
                       border: 'none',
-                      boxShadow: '0px 4px 12px rgba(0,0,0,0.1)',
-                      backgroundColor: '#FFFFFF',
-                      fontFamily: "'Inter', sans-serif",
+                      boxShadow: 'var(--shadow-soft)',
+                      backgroundColor: 'var(--color-surface)',
+                      fontFamily: "'Kanit', sans-serif",
                       padding: '12px',
                     }}
                   >
-                    <p style={{ margin: '0 0 8px 0', color: '#111827', fontWeight: 600 }}>
+                    <p style={{ margin: '0 0 8px 0', color: 'var(--color-text)', fontWeight: 600 }}>
                       {timeLabel ? `เวลา ${timeLabel}` : 'เวลา'}
                     </p>
                     {visiblePayload.map((entry) => {
@@ -357,7 +398,7 @@ export default function WaterLevelChart({
                           key={`${entry.dataKey}-${entry.name}`}
                           style={{
                             margin: '0 0 6px 0',
-                            color: entry.color || '#374151',
+                            color: entry.color || 'var(--color-text-muted)',
                             fontWeight: 500,
                           }}
                         >
@@ -374,10 +415,10 @@ export default function WaterLevelChart({
             {predictionDividerIndex !== null && (
               <ReferenceLine
                 x={chartData[predictionDividerIndex]?.timestamp}
-                stroke="#9CA3AF"
+                stroke="var(--chart-line-prediction)"
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
-                label={{ value: 'เวลาปัจจุบัน', position: 'left', fill: '#6B7280', fontSize: 11, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
+                label={{ value: 'เวลาปัจจุบัน', position: 'left', fill: 'var(--color-text-muted)', fontSize: 11, fontFamily: "'Kanit', sans-serif", fontWeight: 500 }}
               />
             )}
 
@@ -413,7 +454,7 @@ export default function WaterLevelChart({
                 type="monotone"
                 dataKey="p1Prediction"
                 name="P1 (คาดการณ์)"
-                stroke="#9CA3AF"
+                stroke="var(--chart-line-prediction)"
                 strokeWidth={3}
                 strokeDasharray="8 4"
                 dot={false}
@@ -426,7 +467,7 @@ export default function WaterLevelChart({
                 type="monotone"
                 dataKey="p2Prediction"
                 name="P2 (คาดการณ์)"
-                stroke="#9CA3AF"
+                stroke="var(--chart-line-prediction)"
                 strokeWidth={3}
                 strokeDasharray="8 4"
                 dot={false}
@@ -434,8 +475,9 @@ export default function WaterLevelChart({
                 connectNulls={false}
               />
             )}
-          </LineChart>
-        </ResponsiveContainer>
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </StyledChartCard>
   );

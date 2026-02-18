@@ -7,8 +7,8 @@ const StyledActionButton = styled.button`
   &.station-action-button {
     border: 0;
     border-radius: 28px;
-    background: #03216a;
-    color: #fff;
+    background: var(--color-primary);
+    color: var(--color-surface);
     padding: 12px 24px;
     font-family: 'Kanit', sans-serif;
     font-size: 26px;
@@ -21,7 +21,7 @@ const StyledActionButton = styled.button`
   }
 
   &.station-action-button:hover {
-    background: #01205f;
+    background: var(--color-primary-strong);
   }
 
   @media (max-width: 900px) {

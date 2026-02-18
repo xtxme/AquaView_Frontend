@@ -6,10 +6,10 @@ import styled from 'styled-components';
 // Styled components with class selectors
 const TableWrapper = styled.div`
   &.table-wrapper {
-    background: white;
+    background: var(--color-surface);
     border-radius: 12px;
     padding: 24px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-soft);
   }
 `;
 
@@ -26,9 +26,9 @@ const TableTitle = styled.h2`
   &.table-title {
     font-size: 16px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--color-text);
     margin: 0;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Kanit', sans-serif;
   }
 `;
 
@@ -46,16 +46,16 @@ const ActionButton = styled.button<{ $variant?: 'primary' | 'secondary' }>`
     border: none;
     font-size: 14px;
     font-weight: 500;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Kanit', sans-serif;
     cursor: pointer;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
     gap: 8px;
 
-    background: ${props => props.$variant === 'primary' ? '#1e3a8a' : 'white'};
-    color: ${props => props.$variant === 'primary' ? 'white' : '#1a1a1a'};
-    border: ${props => props.$variant === 'primary' ? 'none' : '1px solid #e0e0e0'};
+    background: ${props => props.$variant === 'primary' ? 'var(--color-primary)' : 'var(--color-surface)'};
+    color: ${props => props.$variant === 'primary' ? 'var(--color-surface)' : 'var(--color-text)'};
+    border: ${props => props.$variant === 'primary' ? 'none' : '1px solid var(--color-border)'};
 
     &:hover {
       opacity: 0.9;
@@ -73,16 +73,16 @@ const Table = styled.table`
 
 const TableHead = styled.thead`
   &.table-head {
-    background: #f5f5f5;
+    background: var(--color-surface-soft);
   }
 `;
 
 const TableRow = styled.tr`
   &.table-row {
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--color-border);
     
     &:hover {
-      background: #f9f9f9;
+      background: var(--color-section);
     }
   }
 `;
@@ -93,8 +93,8 @@ const TableHeaderCell = styled.th`
     text-align: left;
     font-size: 14px;
     font-weight: 600;
-    color: #666;
-    font-family: 'Inter', sans-serif;
+    color: var(--color-text-muted);
+    font-family: 'Kanit', sans-serif;
   }
 `;
 
@@ -102,8 +102,8 @@ const TableCell = styled.td`
   &.table-cell {
     padding: 12px 16px;
     font-size: 14px;
-    color: #1a1a1a;
-    font-family: 'Inter', sans-serif;
+    color: var(--color-text);
+    font-family: 'Kanit', sans-serif;
   }
 `;
 
@@ -112,9 +112,9 @@ const TrendIndicator = styled.span<{ $trend: 'up' | 'down' }>`
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    color: ${props => props.$trend === 'up' ? '#f44336' : '#4caf50'};
+    color: ${props => props.$trend === 'up' ? 'var(--status-danger)' : 'var(--status-safe)'};
     font-weight: 500;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Kanit', sans-serif;
 
     &::before {
       content: '${props => props.$trend === 'up' ? '↗' : '↘'}';

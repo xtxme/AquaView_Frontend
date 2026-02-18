@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from 'react'
+import type { Map as LeafletMap, Marker, Polyline } from 'leaflet'
 
 interface Station {
     station_id: string
@@ -29,34 +30,55 @@ interface LeafletStationMapProps {
     selectedProvince?: string
 }
 
+type LeafletModule = typeof import('leaflet')
+
 export function LeafletStationMap({ stations, reaches = [], onStationClick, selectedProvince }: LeafletStationMapProps) {
     const mapRef = useRef<HTMLDivElement>(null)
-    const mapRefDirect = useRef<any>(null)
-    const markersRef = useRef<any[]>([])
-    const polylinesRef = useRef<any[]>([])
-    const labelsRef = useRef<any[]>([])
-    const [L, setL] = useState<any>(null)
+    const mapRefDirect = useRef<LeafletMap | null>(null)
+    const markersRef = useRef<Marker[]>([])
+    const polylinesRef = useRef<Polyline[]>([])
+    const labelsRef = useRef<Marker[]>([])
+    const stationsRef = useRef(stations)
+    const reachesRef = useRef(reaches)
+    const onStationClickRef = useRef(onStationClick)
+    const [L, setL] = useState<LeafletModule | null>(null)
 
     useEffect(() => {
-        console.log('[LeafletStationMap] Component mounting...')
-        
+        stationsRef.current = stations
+    }, [stations])
+
+    useEffect(() => {
+        reachesRef.current = reaches
+    }, [reaches])
+
+    useEffect(() => {
+        onStationClickRef.current = onStationClick
+    }, [onStationClick])
+
+    useEffect(() => {
+        let isCancelled = false
+
         const initMap = async () => {
-            if (!mapRef.current) {
-                console.log('[LeafletStationMap] Map ref not ready, retrying...')
-                setTimeout(initMap, 100)
+            if (!mapRef.current || mapRefDirect.current) {
                 return
             }
 
-            console.log('[LeafletStationMap] Initializing Leaflet map...')
-            
             try {
                 const leaflet = await import('leaflet')
+
+                if (isCancelled || !mapRef.current || mapRefDirect.current) {
+                    return
+                }
+
                 setL(leaflet)
 
-                const link = document.createElement('link')
-                link.rel = 'stylesheet'
-                link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
-                document.head.appendChild(link)
+                if (!document.getElementById('leaflet-cdn-css')) {
+                    const link = document.createElement('link')
+                    link.id = 'leaflet-cdn-css'
+                    link.rel = 'stylesheet'
+                    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+                    document.head.appendChild(link)
+                }
 
                 const map = leaflet.map(mapRef.current, {
                     center: [18.7883, 98.9853],
@@ -70,27 +92,45 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                 }).addTo(map)
 
                 mapRefDirect.current = map
-                console.log('[LeafletStationMap] Map created, adding markers...')
 
-                 const createMarkerIcon = (status: 'green' | 'yellow' | 'red') => {
-                    const icons = {
-                        green: `<svg viewBox="0 0 24 24" fill="#10b981"><path d="M12 2c-5.33 0-8 4-8 8s2.67 8 8 8 8-4 8-8-2.67-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6-6zm0-10c2.21 0 4 1.79 4 4s-1.79 4-4 4-4-1.79-4-4 1.79-4 4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>`,
-                        yellow: `<svg viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2c-5.33 0-8 4-8 8s2.67 8 8 8 8-4 8-8-2.67-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6-6zm0-10c2.21 0 4 1.79 4 4s-1.79 4-4 4-4-1.79-4-4 1.79-4 4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>`,
-                        red: `<svg viewBox="0 0 24 24" fill="#ef4444"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6-6z"/></svg>`
-                    }
-                    
-                    const icon = icons[status]
-                    
+                const createMarkerIcon = (status: 'green' | 'yellow' | 'red') => {
+                    const tone = {
+                        green: 'var(--status-safe)',
+                        yellow: 'var(--status-warning)',
+                        red: 'var(--status-danger)',
+                    }[status]
+                    const toneSoft = {
+                        green: 'var(--status-safe-bg)',
+                        yellow: 'var(--status-warning-bg)',
+                        red: 'var(--status-danger-bg)',
+                    }[status]
+
                     return leaflet.divIcon({
-                        html: `<div style="width:32px;height:32px;">${icon}</div>`,
+                        html: `
+                            <div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;">
+                                <div style="width:56px;height:56px;border-radius:50%;background:${toneSoft};display:flex;align-items:center;justify-content:center;">
+                                    <div style="width:44px;height:44px;border-radius:50%;background:${tone};display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft), inset 0 0 0 2px var(--overlay-white-strong);">
+                                        <div style="width:34px;height:34px;border-radius:50%;background:var(--overlay-white-soft);display:flex;align-items:center;justify-content:center;">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="var(--color-surface)" aria-hidden="true">
+                                                <path d="M12 2.25c0 0-7 6.58-7 11.2A7 7 0 0 0 19 13.45c0-4.62-7-11.2-7-11.2z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `,
                         className: 'custom-marker',
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 16],
+                        iconSize: [56, 56],
+                        iconAnchor: [28, 28],
                     })
                 }
 
+                const currentStations = stationsRef.current
+                const currentReaches = reachesRef.current
+                const currentOnStationClick = onStationClickRef.current
+
                 const stationOrderMap = new Map<string, string>()
-                reaches.forEach(reach => {
+                currentReaches.forEach(reach => {
                     stationOrderMap.set(reach.downstream_station, reach.upstream_station)
                 })
 
@@ -98,14 +138,14 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                     return stationOrderMap.get(stationId) || null
                 }
 
-                stations.forEach(station => {
+                currentStations.forEach(station => {
                     const marker = leaflet.marker([station.latitude, station.longitude], {
                         icon: createMarkerIcon(station.status)
                     }).addTo(map)
                     marker.setZIndexOffset(1000)
 
                     const prevStationId = getPreviousStation(station.station_id)
-                    const prevStation = prevStationId ? stations.find(s => s.station_id === prevStationId) : null
+                    const prevStation = prevStationId ? currentStations.find(s => s.station_id === prevStationId) : null
 
                     let timeText = ''
                     if (prevStation && prevStation.latest_reading?.ts && station.latest_reading?.ts) {
@@ -117,50 +157,50 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                             const hours = Math.floor(diffHours)
                             const minutes = Math.round((diffHours - hours) * 60)
                             if (minutes > 0) {
-                                timeText = `<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${hours} ชั่วโมง ${minutes} นาที</div>`
+                                timeText = `<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;">${hours} ชั่วโมง ${minutes} นาที</div>`
                             } else {
-                                timeText = `<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${hours} ชั่วโมง</div>`
+                                timeText = `<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;">${hours} ชั่วโมง</div>`
                             }
                         } else if (diffHours > 0) {
                             const minutes = Math.round(diffHours * 60)
-                            timeText = `<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${minutes} นาที</div>`
+                            timeText = `<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;">${minutes} นาที</div>`
                         } else if (diffHours === 0) {
-                            timeText = '<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">0 นาที</div>'
+                            timeText = '<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;">0 นาที</div>'
                         } else {
-                            timeText = `<div style="font-size: 12px; color: #ef4444; margin-bottom: 4px;">-${Math.abs(Math.floor(diffHours))} ชั่วโมง ${Math.abs(Math.round((diffHours - Math.floor(diffHours)) * 60))} นาที</div>`
+                            timeText = `<div style="font-size: 12px; color: var(--status-danger); margin-bottom: 4px;">-${Math.abs(Math.floor(diffHours))} ชั่วโมง ${Math.abs(Math.round((diffHours - Math.floor(diffHours)) * 60))} นาที</div>`
                         }
                     } else {
-                        timeText = '<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">ไม่มีข้อมูล</div>'
+                        timeText = '<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;">ไม่มีข้อมูล</div>'
                     }
 
                     const popupContent = `<div style="min-width: 200px; font-family: sans-serif;">
-                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #1f2937;">${station.name}</div>
+                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: var(--color-text);">${station.name}</div>
                         ${timeText}
-                        <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;"><strong>ระดับน้ำ:</strong> ${station.latest_reading?.water_level_m?.toFixed(2) || 'N/A'} ม.</div>
-                        <div style="font-size: 12px; color: #4b5563; margin-bottom: 8px;"><strong>ใกล้ตลิ่ง:</strong> ${station.percent_of_bank.toFixed(1)}%</div>
-                        <div style="padding: 4px 8px; background: ${station.status === 'red' ? '#fee2e2' : station.status === 'yellow' ? '#fef3c7' : '#d1fae5'}; color: ${station.status === 'red' ? '#991b1b' : station.status === 'yellow' ? '#92400e' : '#065f46'}; border-radius: 4px; font-size: 11px; font-weight: 600; text-align: center;">${station.status === 'red' ? 'อันตราย' : station.status === 'yellow' ? 'เฝ้าระวัง' : 'ปกติ'}</div>
+                        <div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;"><strong>ระดับน้ำ:</strong> ${station.latest_reading?.water_level_m?.toFixed(2) || 'N/A'} ม.</div>
+                        <div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px;"><strong>ใกล้ตลิ่ง:</strong> ${station.percent_of_bank.toFixed(1)}%</div>
+                        <div style="padding: 4px 8px; background: ${station.status === 'red' ? 'var(--status-danger-bg)' : station.status === 'yellow' ? 'var(--status-warning-bg)' : 'var(--status-safe-bg)'}; color: ${station.status === 'red' ? 'var(--status-danger)' : station.status === 'yellow' ? 'var(--status-warning)' : 'var(--status-safe)'}; border-radius: 4px; font-size: 11px; font-weight: 600; text-align: center;">${station.status === 'red' ? 'อันตราย' : station.status === 'yellow' ? 'เฝ้าระวัง' : 'ปกติ'}</div>
                     </div>`
 
                     marker.bindPopup(popupContent)
 
                     marker.on('click', () => {
-                        if (onStationClick) {
-                            onStationClick(station.station_id)
+                        if (currentOnStationClick) {
+                            currentOnStationClick(station.station_id)
                         }
                     })
 
                     markersRef.current.push(marker)
                 })
 
-                if (reaches && reaches.length > 0) {
-                    reaches.forEach(reach => {
-                        const upstreamStation = stations.find(s => s.station_id === reach.upstream_station)
-                        const downstreamStation = stations.find(s => s.station_id === reach.downstream_station)
+                if (currentReaches.length > 0) {
+                    currentReaches.forEach(reach => {
+                        const upstreamStation = currentStations.find(s => s.station_id === reach.upstream_station)
+                        const downstreamStation = currentStations.find(s => s.station_id === reach.downstream_station)
 
                         if (upstreamStation && downstreamStation) {
                             const polyline = leaflet.polyline(
                                 [[upstreamStation.latitude, upstreamStation.longitude], [downstreamStation.latitude, downstreamStation.longitude]],
-                                { color: '#3b82f6', weight: 3, opacity: 0.7, dashArray: '10, 10' }
+                                { color: 'var(--color-secondary)', weight: 3, opacity: 0.7, dashArray: '10, 10' }
                             ).addTo(map)
 
                             const midLat = (upstreamStation.latitude + downstreamStation.latitude) / 2
@@ -171,7 +211,7 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                             const timeText = hours > 0 && minutes > 0 ? `${hours} ชั่วโมง ${minutes} นาที` : hours > 0 ? `${hours} ชั่วโมง` : `${minutes} นาที`
 
                             const travelTimeLabel = leaflet.divIcon({
-                                html: `<div style="background: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #1f2937; box-shadow: 0 2px 8px rgba(0,0,0,0.15); border: 2px solid #3b82f6; white-space: nowrap;">⏱️ ${timeText}</div>`,
+                                html: `<div style="background: var(--color-surface); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--color-text); box-shadow: var(--shadow-soft); border: 2px solid var(--color-secondary); white-space: nowrap;">⏱️ ${timeText}</div>`,
                                 className: 'travel-time-label',
                                 iconSize: [150, 30],
                                 iconAnchor: [75, 15],
@@ -188,16 +228,11 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                     })
                 }
 
-                if (stations.length > 0) {
-                    const bounds = leaflet.latLngBounds(stations.map(s => [s.latitude, s.longitude]))
+                if (currentStations.length > 0) {
+                    const bounds = leaflet.latLngBounds(currentStations.map(s => [s.latitude, s.longitude]))
                     map.fitBounds(bounds, { padding: [50, 50] })
                 }
 
-                console.log('[LeafletStationMap] Map initialized with', {
-                    markers: markersRef.current.length,
-                    polylines: polylinesRef.current.length,
-                    labels: labelsRef.current.length
-                })
             } catch (error) {
                 console.error('[LeafletStationMap] Error:', error)
             }
@@ -206,10 +241,14 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
         initMap()
 
         return () => {
+            isCancelled = true
             if (mapRefDirect.current) {
                 mapRefDirect.current.remove()
                 mapRefDirect.current = null
             }
+            markersRef.current = []
+            polylinesRef.current = []
+            labelsRef.current = []
         }
     }, [])
 

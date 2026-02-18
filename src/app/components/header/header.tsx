@@ -6,8 +6,8 @@ import "leaflet/dist/leaflet.css";
 
 const Header = styled.header`
   width: 100%;
-  background-color: #ffffff;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-soft);
   height: 80px;
   display: flex;
   padding-left: 68px;
@@ -28,13 +28,13 @@ const Header = styled.header`
     line-height: 1.2;
   }
   .text-th{
-    color: #01205F;
+    color: var(--color-primary);
     font-size: 24px;
     font-weight: 500;
     font-family: 'Kanit', sans-serif;
   }
   .text-eng{
-    color: #3273BA;
+    color: var(--color-secondary);
     font-size: 22px;
     font-weight: 500;
     font-family: 'Kanit', sans-serif;
@@ -43,8 +43,8 @@ const Header = styled.header`
   .content-right{
     display: flex;
     align-items: flex-start;
-    gap: 108px;
-    padding-left: 600px;
+    gap: 36px;
+    padding-left: 360px;
     padding-top: 16px;
   }
 
@@ -57,7 +57,7 @@ const Header = styled.header`
   }
 
   .nav-text{
-    color: #898989;
+    color: var(--color-text-subtle);
     font-size: 20px;
     font-style: normal;
     font-weight: 400;
@@ -66,11 +66,11 @@ const Header = styled.header`
   }
 
   .nav-item:hover .nav-text{
-    color: #3273BA;
+    color: var(--color-secondary);
   }
 
   .nav-item.active .nav-text{
-    color: #01205F;
+    color: var(--color-primary);
     font-weight: 600;
   }
 
