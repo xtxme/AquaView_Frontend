@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GeoJSON as LeafletGeoJSON, Map as LeafletMap, Marker, Polyline } from 'leaflet'
 import type { Feature, GeoJsonObject, LineString, MultiLineString, Position } from 'geojson'
+import nearestPointOnLine from '@turf/nearest-point-on-line'
+import { lineString, point } from '@turf/helpers'
 import { buildStationPopupContent } from '@/app/components/home/station-popup-content'
+import { WaterLevelLegend } from '@/app/components/dashboard/water-level-legend'
 import { fetchRiverGeometryFromOverpass } from '@/lib/osm/fetch-river-geometry'
 import { getRiverConfigByKey } from '@/lib/osm/config'
 import { computeReachDistanceOnRiver } from '@/lib/osm/reach-distance'
@@ -39,6 +42,8 @@ interface LeafletStationMapProps {
 
 type LeafletModule = typeof import('leaflet')
 type ReachDistanceMap = Map<string, ReachRiverDistance>
+type Coordinate = [number, number]
+type StationPositionMap = Map<string, [number, number]>
 
 function buildStationsBbox(stations: Station[]): BBox | null {
     if (stations.length === 0) {
@@ -149,6 +154,54 @@ function buildReachTooltip(timeText: string, distance?: number): string {
     return `เวลาเดินทาง: ${timeText}<br/>ระยะตามลำน้ำ: ไม่พบช่วงแม่น้ำที่ต่อเนื่อง`
 }
 
+function toRiverSegments(riverFeature: Feature<LineString | MultiLineString>): Coordinate[][] {
+    if (riverFeature.geometry.type === 'LineString') {
+        return [riverFeature.geometry.coordinates as Coordinate[]]
+    }
+
+    return riverFeature.geometry.coordinates
+        .filter((segment) => segment.length >= 2)
+        .map((segment) => segment as Coordinate[])
+}
+
+function buildStationPositionMap(
+    stations: Station[],
+    riverFeature: Feature<LineString | MultiLineString>,
+    maxSnapDistanceKm = 2
+): StationPositionMap {
+    const segments = toRiverSegments(riverFeature)
+    const positions: StationPositionMap = new Map()
+
+    stations.forEach((station) => {
+        let bestLat = station.latitude
+        let bestLng = station.longitude
+        let bestDistKm = Number.POSITIVE_INFINITY
+
+        segments.forEach((segment) => {
+            const nearest = nearestPointOnLine(
+                lineString(segment),
+                point([station.longitude, station.latitude]),
+                { units: 'kilometers' }
+            )
+            const dist = nearest.properties?.dist
+            if (typeof dist !== 'number' || !Number.isFinite(dist) || dist > maxSnapDistanceKm) {
+                return
+            }
+
+            const [snapLng, snapLat] = nearest.geometry.coordinates as Coordinate
+            if (dist < bestDistKm) {
+                bestLat = snapLat
+                bestLng = snapLng
+                bestDistKm = dist
+            }
+        })
+
+        positions.set(station.station_id, [bestLat, bestLng])
+    })
+
+    return positions
+}
+
 export function LeafletStationMap({
     stations,
     reaches = [],
@@ -161,7 +214,11 @@ export function LeafletStationMap({
     const markersRef = useRef<Marker[]>([])
     const polylinesRef = useRef<Polyline[]>([])
     const labelsRef = useRef<Marker[]>([])
+    const stationMarkerMapRef = useRef<Map<string, Marker>>(new Map())
+    const reachPolylineMapRef = useRef<Map<string, Polyline>>(new Map())
+    const reachLabelMapRef = useRef<Map<string, Marker>>(new Map())
     const riverLayerRef = useRef<LeafletGeoJSON | null>(null)
+    const snappedStationPositionsRef = useRef<StationPositionMap>(new Map())
     const stationsRef = useRef(stations)
     const reachesRef = useRef(reaches)
     const onStationClickRef = useRef(onStationClick)
@@ -401,6 +458,7 @@ export function LeafletStationMap({
                     })
 
                     markersRef.current.push(marker)
+                    stationMarkerMapRef.current.set(station.station_id, marker)
                 })
 
                 if (currentReaches.length > 0) {
@@ -497,6 +555,8 @@ export function LeafletStationMap({
 
                             polylinesRef.current.push(polyline)
                             labelsRef.current.push(label)
+                            reachPolylineMapRef.current.set(reachKey, polyline)
+                            reachLabelMapRef.current.set(reachKey, label)
                         }
                     })
                 }
@@ -522,7 +582,11 @@ export function LeafletStationMap({
             markersRef.current = []
             polylinesRef.current = []
             labelsRef.current = []
+            stationMarkerMapRef.current.clear()
+            reachPolylineMapRef.current.clear()
+            reachLabelMapRef.current.clear()
             reachDistanceMapRef.current.clear()
+            snappedStationPositionsRef.current.clear()
             riverGeometryRef.current = null
             setActiveReachKey(null)
             clearReachHighlight()
@@ -575,11 +639,65 @@ export function LeafletStationMap({
                     stations,
                     reaches
                 )
+
+                const stationPositionMap = buildStationPositionMap(
+                    stations,
+                    riverGeometry.geojson as Feature<LineString | MultiLineString>
+                )
+                snappedStationPositionsRef.current = stationPositionMap
+
+                stations.forEach((station) => {
+                    const marker = stationMarkerMapRef.current.get(station.station_id)
+                    const stationPos = stationPositionMap.get(station.station_id)
+                    if (!marker || !stationPos) {
+                        return
+                    }
+                    marker.setLatLng(stationPos)
+                })
+
+                reaches.forEach((reach) => {
+                    const reachKey = getReachKey(reach)
+                    const polyline = reachPolylineMapRef.current.get(reachKey)
+                    const label = reachLabelMapRef.current.get(reachKey)
+                    const upstreamPos = stationPositionMap.get(reach.upstream_station)
+                    const downstreamPos = stationPositionMap.get(reach.downstream_station)
+                    const reachDistance = reachDistanceMapRef.current.get(reachKey)
+                    if (!upstreamPos || !downstreamPos) {
+                        return
+                    }
+
+                    if (polyline) {
+                        if (reachDistance) {
+                            const segmentCoordinates = reachDistance.segmentGeojson.geometry.coordinates as Coordinate[]
+                            const segmentLatLngs = segmentCoordinates.map(([lng, lat]) => [lat, lng] as [number, number])
+                            polyline.setLatLngs(segmentLatLngs)
+                        } else {
+                            polyline.setLatLngs([upstreamPos, downstreamPos])
+                        }
+                    }
+
+                    if (label) {
+                        if (reachDistance) {
+                            const segmentCoordinates = reachDistance.segmentGeojson.geometry.coordinates as Coordinate[]
+                            const midpoint = computePolylineMidpoint(segmentCoordinates as Position[])
+                            if (midpoint) {
+                                label.setLatLng(midpoint)
+                                return
+                            }
+                        }
+
+                        label.setLatLng([
+                            (upstreamPos[0] + downstreamPos[0]) / 2,
+                            (upstreamPos[1] + downstreamPos[1]) / 2,
+                        ])
+                    }
+                })
             } catch (error) {
                 if (!cancelled) {
                     console.error('[LeafletStationMap] Failed to load river geometry:', error)
                     riverGeometryRef.current = null
                     reachDistanceMapRef.current = new Map()
+                    snappedStationPositionsRef.current.clear()
                     clearReachHighlight()
                 }
             }
@@ -595,6 +713,7 @@ export function LeafletStationMap({
             }
             riverGeometryRef.current = null
             reachDistanceMapRef.current = new Map()
+            snappedStationPositionsRef.current.clear()
             clearReachHighlight()
         }
     }, [L, buildReachDistanceMap, clearReachHighlight, reaches, riverKey, stations])
@@ -604,7 +723,11 @@ export function LeafletStationMap({
             const provinceStations = stations.filter(s => s.province === selectedProvince)
             
             if (provinceStations.length > 0) {
-                const bounds = L.latLngBounds(provinceStations.map(s => [s.latitude, s.longitude]))
+                const bounds = L.latLngBounds(
+                    provinceStations.map((station) => (
+                        snappedStationPositionsRef.current.get(station.station_id) ?? [station.latitude, station.longitude]
+                    ))
+                )
                 mapRefDirect.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 })
             }
         }
@@ -613,23 +736,7 @@ export function LeafletStationMap({
     return (
         <div className="relative w-full h-full rounded-lg overflow-hidden border border-gray-200">
             <div ref={mapRef} className="w-full h-full min-h-[500px]" />
-            <div className="absolute bottom-4 left-4 bg-slate-900/95 backdrop-blur-sm rounded-lg shadow-xl p-4 border border-slate-700 z-[1000]">
-                <div className="text-sm font-semibold mb-3 text-white">เกณฑ์ระดับน้ำ</div>
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full border-2 shadow-sm" style={{ backgroundColor: 'var(--status-safe-bg)', borderColor: 'var(--status-safe)' }}></div>
-                        <span className="text-xs" style={{ color: 'var(--status-safe)' }}>ปกติ &lt; 80% ของระดับอันตราย</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full border-2 shadow-sm" style={{ backgroundColor: 'var(--status-warning-bg)', borderColor: 'var(--status-warning)' }}></div>
-                        <span className="text-xs" style={{ color: 'var(--status-warning)' }}>เฝ้าระวัง 80% - 99.9%</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full border-2 shadow-sm" style={{ backgroundColor: 'var(--status-danger-bg)', borderColor: 'var(--status-danger)' }}></div>
-                        <span className="text-xs" style={{ color: 'var(--status-danger)' }}>อันตราย ≥ 100%</span>
-                    </div>
-                </div>
-            </div>
+            <WaterLevelLegend />
         </div>
     )
 }

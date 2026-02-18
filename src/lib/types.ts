@@ -55,3 +55,16 @@ export interface Alert {
     is_active: boolean;
     created_at: string;
 }
+
+export type StationRiskStatus = 'normal' | 'warning' | 'critical';
+
+export interface StationRiskModel {
+    status: StationRiskStatus;
+    statusLabel: string;
+    riskMessage: string;
+    recommendedAction: string;
+    updatedAtLabel: string;
+    percentOfBank: number;
+    warningLevel: number;
+    dangerLevel: number;
+}

@@ -8,14 +8,15 @@ import { Reading } from '@/lib/types';
 const TableCard = styled.section`
   background: var(--color-surface-soft);
   border-radius: 16px;
-  padding: 14px 20px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
   overflow-x: auto;
 `;
 
-const Table = styled.table`
+const Table = styled.table<{ $desktop: boolean }>`
   width: 100%;
   border-collapse: collapse;
-  min-width: 620px;
+  min-width: ${({ $desktop }) => ($desktop ? '620px' : '0')};
   font-family: var(--font-kanit), sans-serif;
 
   th,
@@ -28,13 +29,26 @@ const Table = styled.table`
   }
 
   th {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--color-primary);
   }
 
   tbody tr:last-child td {
     border-bottom: 0;
+  }
+
+  @media (max-width: 640px) {
+    th.date-col,
+    td.date-col {
+      display: ${({ $desktop }) => ($desktop ? 'table-cell' : 'none')};
+    }
+
+    th,
+    td {
+      padding: 10px 8px;
+      font-size: 13px;
+    }
   }
 `;
 
@@ -48,29 +62,40 @@ const DeltaValue = styled.span<{ trend: 'up' | 'down' | 'flat' }>`
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 600;
   color: ${({ trend }) => {
     if (trend === 'up') return 'var(--status-danger)';
     if (trend === 'down') return 'var(--status-safe)';
     return 'var(--color-text-muted)';
   }};
+  background: ${({ trend }) => {
+    if (trend === 'up') return 'var(--status-danger-bg)';
+    if (trend === 'down') return 'var(--status-safe-bg)';
+    return 'var(--color-surface)';
+  }};
 `;
 
 interface StationHourlyTableProps {
   readings: Reading[];
+  mode?: 'desktop' | 'auto';
 }
 
-export default function StationHourlyTable({ readings }: StationHourlyTableProps) {
+export default function StationHourlyTable({ readings, mode = 'auto' }: StationHourlyTableProps) {
   const rows = useMemo(() => readings.slice(0, 12).reverse(), [readings]);
+  const isDesktopMode = mode === 'desktop';
 
   return (
     <TableCard>
-      <Table>
+      <Table $desktop={isDesktopMode}>
         <thead>
           <tr>
-            <th>วันที่</th>
+            <th className="date-col">วันที่</th>
             <th>เวลา</th>
-            <th>ระดับน้ำ (ม.)</th>
-            <th>การเปลี่ยนแปลง (ม.)</th>
+            <th>ระดับน้ำ</th>
+            <th>เปลี่ยนแปลง</th>
           </tr>
         </thead>
         <tbody>
@@ -82,7 +107,7 @@ export default function StationHourlyTable({ readings }: StationHourlyTableProps
 
             return (
               <tr key={reading.id}>
-                <td>
+                <td className="date-col">
                   {currentDate.toLocaleDateString('th-TH', {
                     day: 'numeric',
                     month: 'short',
@@ -103,7 +128,7 @@ export default function StationHourlyTable({ readings }: StationHourlyTableProps
                   <DeltaValue trend={trend}>
                     {trend === 'up' ? <ArrowUpRight size={14} /> : null}
                     {trend === 'down' ? <ArrowDownRight size={14} /> : null}
-                    {`${delta > 0 ? '+' : ''}${delta.toFixed(2)} ม.`}
+                    {`${delta > 0 ? '+' : ''}${delta.toFixed(2)}`}
                   </DeltaValue>
                 </td>
               </tr>

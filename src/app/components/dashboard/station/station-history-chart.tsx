@@ -19,14 +19,19 @@ type StationHistoryPoint = {
   waterLevel: number;
 };
 
+type ChartPoint = StationHistoryPoint & {
+  actual: number | null;
+  prediction: number | null;
+};
+
 const ChartCard = styled.section`
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
-  padding: 14px 14px 12px;
+  padding: 14px;
 
   .chart-caption {
-    margin: 0 0 8px;
+    margin: 0 0 10px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -38,7 +43,46 @@ const ChartCard = styled.section`
 
   .chart-area {
     width: 100%;
-    height: 250px;
+    height: 280px;
+  }
+
+  .chart-legend {
+    margin: 0 0 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    font-family: var(--font-kanit), sans-serif;
+    font-size: 13px;
+    color: var(--color-text);
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .dot.actual {
+    background: var(--color-secondary);
+  }
+
+  .dot.prediction {
+    border: 2px dashed var(--color-text-muted);
+  }
+
+  .trend-summary {
+    margin: 8px 0 0;
+    color: var(--color-text-muted);
+    font-family: var(--font-kanit), sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
   }
 `;
 
@@ -46,12 +90,16 @@ interface StationHistoryChartProps {
   data: StationHistoryPoint[];
   maxValue: number;
   predictionStartIndex?: number;
+  predictionLabel?: string;
+  trendSummary?: string;
 }
 
 export default function StationHistoryChart({
   data,
   maxValue,
-  predictionStartIndex
+  predictionStartIndex,
+  predictionLabel = 'คาดการณ์ 6 ชั่วโมงข้างหน้า',
+  trendSummary
 }: StationHistoryChartProps) {
   const hasPredictionDivider =
     typeof predictionStartIndex === 'number' &&
@@ -59,16 +107,37 @@ export default function StationHistoryChart({
     predictionStartIndex > 0 &&
     predictionStartIndex < data.length;
 
-  if (data.length === 0) {
+  const chartData: ChartPoint[] = data.map((point, index) => {
+    const inPrediction = hasPredictionDivider && index >= predictionStartIndex;
+    const bridge = hasPredictionDivider && index === predictionStartIndex - 1;
+    return {
+      ...point,
+      actual: inPrediction ? null : point.waterLevel,
+      prediction: inPrediction || bridge ? point.waterLevel : null
+    };
+  });
+
+  if (chartData.length === 0) {
     return (
       <ChartCard>
         <p className="chart-caption">
           <Calendar size={12} />
           กราฟระดับน้ำ 24 ชั่วโมงย้อนหลัง
         </p>
+        <div className="chart-legend">
+          <span className="legend-item">
+            <span className="dot actual" />
+            ข้อมูลจริง
+          </span>
+          <span className="legend-item">
+            <span className="dot prediction" />
+            {predictionLabel}
+          </span>
+        </div>
         <div className="chart-area" style={{ display: 'grid', placeItems: 'center' }}>
           ไม่มีข้อมูลสำหรับแสดงผล
         </div>
+        {trendSummary ? <p className="trend-summary">{trendSummary}</p> : null}
       </ChartCard>
     );
   }
@@ -79,9 +148,19 @@ export default function StationHistoryChart({
         <Calendar size={12} />
         กราฟระดับน้ำ 24 ชั่วโมงย้อนหลัง
       </p>
+      <div className="chart-legend" aria-label="คำอธิบายกราฟ">
+        <span className="legend-item">
+          <span className="dot actual" />
+          ข้อมูลจริง
+        </span>
+        <span className="legend-item">
+          <span className="dot prediction" />
+          {predictionLabel}
+        </span>
+      </div>
       <div className="chart-area">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: -16 }}>
+          <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: -16 }}>
             <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" />
             <XAxis
               dataKey="time"
@@ -119,15 +198,27 @@ export default function StationHistoryChart({
             />
             <Line
               type="monotone"
-              dataKey="waterLevel"
+              dataKey="actual"
               stroke="var(--color-secondary)"
-              strokeWidth={2}
+              strokeWidth={2.4}
               dot={{ r: 2, fill: 'var(--color-secondary)' }}
               activeDot={{ r: 4 }}
+              connectNulls={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="prediction"
+              stroke="var(--color-text-muted)"
+              strokeWidth={2}
+              strokeDasharray="6 6"
+              dot={false}
+              activeDot={{ r: 4 }}
+              connectNulls={false}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
+      {trendSummary ? <p className="trend-summary">{trendSummary}</p> : null}
     </ChartCard>
   );
 }
