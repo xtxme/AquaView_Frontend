@@ -3,13 +3,13 @@
 import React, { Suspense, useMemo } from 'react';
 import styled from 'styled-components';
 import { useSearchParams } from 'next/navigation';
-import { Download, Flag, MapPin, Waves } from 'lucide-react';
+import { Download } from 'lucide-react';
 import AppHeader from '@/app/components/header/header';
 import AppFooter from '@/app/components/footer/footer';
-import { StationActionButton, StationSectionHeader } from '@/app/components/Station';
-import WaterLevelChart from '@/app/components/dashboard/water-level-chart';
-import { RecentReadings } from '@/app/components/dashboard/station/recent-readings';
-import { getMockStationWithLatestReading, MOCK_READINGS } from '@/lib/mock-data';
+import StationOverviewCard from '@/app/components/dashboard/station/station-overview-card';
+import StationHistoryChart from '@/app/components/dashboard/station/station-history-chart';
+import StationHourlyTable from '@/app/components/dashboard/station/station-hourly-table';
+import { generatePredictionData, getMockStationWithLatestReading, MOCK_READINGS } from '@/lib/mock-data';
 
 const PageWrapper = styled.div`
   min-height: 100vh;
@@ -23,143 +23,70 @@ const ContentWrapper = styled.div`
 `;
 
 const StationPageContainer = styled.main`
-  width: min(1240px, 100%);
+  width: min(1080px, 100%);
   margin: 0 auto;
-  padding: 38px 20px 84px;
-  font-family: 'Kanit', sans-serif;
+  padding: 30px 20px 80px;
 
   .page-title {
-    margin: 0 0 30px;
+    margin: 0 0 18px;
     color: var(--color-primary);
-    font-size: clamp(42px, 5vw, 64px);
+    font-family: var(--font-kanit), sans-serif;
+    font-size: clamp(34px, 3.4vw, 46px);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+`;
+
+const SectionHeader = styled.div`
+  margin: 34px 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  .title {
+    margin: 0;
+    color: var(--color-primary);
+    font-family: var(--font-kanit), sans-serif;
+    font-size: clamp(24px, 2vw, 34px);
     font-weight: 700;
     line-height: 1.2;
   }
 
-  @media (max-width: 900px) {
-    .page-title {
-      font-size: 42px;
+  .actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 820px) {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .actions {
+      justify-content: flex-start;
     }
   }
 `;
 
-const HeroCard = styled.section`
-  background: var(--color-surface-soft);
-  border-radius: 42px;
-  padding: 42px 46px 58px;
-  margin-bottom: 34px;
-
-  @media (max-width: 900px) {
-    border-radius: 28px;
-    padding: 28px 24px 32px;
-  }
-`;
-
-const HeroInfoRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: 40px;
-  row-gap: 14px;
-  margin-bottom: 42px;
-`;
-
-const HeroInfoItem = styled.div<{ iconTone?: 'primary' | 'secondary' }>`
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  color: var(--color-primary);
-  font-size: clamp(22px, 2.5vw, 36px);
+const ActionButton = styled.button`
+  border: 0;
+  border-radius: 16px;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  padding: 10px 20px;
+  font-family: var(--font-kanit), sans-serif;
+  font-size: 25px;
   font-weight: 500;
-  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
 
-  svg {
-    width: clamp(24px, 2.7vw, 38px);
-    height: clamp(24px, 2.7vw, 38px);
-    stroke-width: 2.2;
-    color: ${({ iconTone }) => (iconTone === 'secondary' ? 'var(--color-accent)' : 'var(--color-secondary)')};
-    flex-shrink: 0;
-  }
-
-  @media (max-width: 1100px) {
-    font-size: 30px;
-
-    svg {
-      width: 34px;
-      height: 34px;
-    }
-  }
-
-  @media (max-width: 900px) {
-    font-size: 28px;
-  }
-
-  @media (max-width: 640px) {
-    font-size: 24px;
-  }
-`;
-
-const HeroStatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 28px;
-  width: min(900px, 100%);
-  margin: 0 auto;
-
-  @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const HeroStatCard = styled.article`
-  border: 2px solid var(--color-primary);
-  border-radius: 40px;
-  background: var(--color-surface);
-  padding: 42px 50px;
-  min-height: 230px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-
-  .label {
-    margin: 0;
-    color: var(--color-text);
-    font-size: clamp(32px, 3vw, 46px);
-    font-weight: 600;
-    line-height: 1.12;
-  }
-
-  .value {
-    margin: 20px 0 0;
-    color: var(--color-text);
-    font-size: clamp(38px, 3.8vw, 56px);
-    font-weight: 500;
-    line-height: 1.1;
-  }
-
-  @media (max-width: 1100px) {
-    min-height: 190px;
-    border-radius: 30px;
-    padding: 30px 34px;
-
-    .label {
-      font-size: 34px;
-    }
-
-    .value {
-      margin-top: 14px;
-      font-size: 42px;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .label {
-      font-size: 30px;
-    }
-
-    .value {
-      font-size: 36px;
-    }
+  &:hover {
+    background: var(--color-primary-strong);
   }
 `;
 
@@ -171,26 +98,37 @@ function StationContent() {
 
   const stationHistory = useMemo(() => {
     return MOCK_READINGS
-      .filter((r) => r.station_id === stationId)
+      .filter((reading) => reading.station_id === stationId)
       .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
   }, [stationId]);
 
-  const bankLevel = stationData?.bank_level_m ?? 0;
-
-  const chartData = useMemo(() => {
-    return [...stationHistory]
+  const chartModel = useMemo(() => {
+    const historicalData = stationHistory
       .slice(0, 24)
       .reverse()
-      .map((reading, index) => ({
+      .map((reading) => ({
         time: new Date(reading.ts).toLocaleTimeString('th-TH', {
           hour: '2-digit',
           minute: '2-digit'
         }),
-        timestamp: index,
-        p1: reading.water_level_m,
-        p2: bankLevel
+        waterLevel: reading.water_level_m
       }));
-  }, [bankLevel, stationHistory]);
+
+    const predictionData = generatePredictionData(stationId, 6)
+      .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime())
+      .map((reading) => ({
+        time: new Date(reading.ts).toLocaleTimeString('th-TH', {
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        waterLevel: reading.water_level_m
+      }));
+
+    return {
+      data: [...historicalData, ...predictionData],
+      predictionStartIndex: historicalData.length
+    };
+  }, [stationHistory, stationId]);
 
   if (!stationData) {
     return (
@@ -201,70 +139,47 @@ function StationContent() {
   }
 
   const waterLevel = stationData.latest_reading?.water_level_m ?? 0;
+  const bankLevel = stationData.bank_level_m;
   const nearOverflowPercentage = bankLevel > 0 ? (waterLevel / bankLevel) * 100 : 0;
 
   return (
     <StationPageContainer>
       <h1 className="page-title">{stationData.name}</h1>
 
-      <HeroCard>
-        <HeroInfoRow>
-          <HeroInfoItem>
-            <MapPin />
-            <span>{stationData.province} - {stationData.district}</span>
-          </HeroInfoItem>
-          <HeroInfoItem iconTone="secondary">
-            <Waves />
-            <span>ริมตลิ่ง: {stationData.bank_level_m.toFixed(2)} ม.</span>
-          </HeroInfoItem>
-          <HeroInfoItem>
-            <Flag />
-            <span>สถานีต้นน้ำแม่น้ำปิง</span>
-          </HeroInfoItem>
-        </HeroInfoRow>
-
-        <HeroStatsGrid>
-          <HeroStatCard>
-            <p className="label">ระดับน้ำปัจจุบัน</p>
-            <p className="value">{waterLevel.toFixed(2)} ม.</p>
-          </HeroStatCard>
-          <HeroStatCard>
-            <p className="label">ใกล้ตลิ่ง</p>
-            <p className="value">{nearOverflowPercentage.toFixed(1)} %</p>
-          </HeroStatCard>
-        </HeroStatsGrid>
-      </HeroCard>
-
-      <StationSectionHeader
-        title="กราฟระดับน้ำ 24 ชั่วโมงย้อนหลัง"
-        actions={(
-          <StationActionButton>
-            Export <Download size={24} />
-          </StationActionButton>
-        )}
+      <StationOverviewCard
+        province={stationData.province}
+        district={stationData.district}
+        bankLevel={bankLevel}
+        waterLevel={waterLevel}
+        nearOverflowPercentage={nearOverflowPercentage}
       />
 
-      <WaterLevelChart
-        title="กราฟระดับน้ำ 24 ชั่วโมงย้อนหลัง"
-        data={chartData}
-        maxValue={stationData.bank_level_m * 1.25}
+      <SectionHeader>
+        <h2 className="title">กราฟระดับน้ำ 24 ชั่วโมงย้อนหลัง</h2>
+        <div className="actions">
+          <ActionButton type="button">
+            Export <Download size={18} />
+          </ActionButton>
+        </div>
+      </SectionHeader>
+
+      <StationHistoryChart
+        data={chartModel.data}
+        maxValue={bankLevel}
+        predictionStartIndex={chartModel.predictionStartIndex}
       />
 
-      <StationSectionHeader
-        title="ตารางข้อมูลรายชั่วโมง"
-        actions={(
-          <>
-            <StationActionButton>
-              เลือกช่วงเวลาข้อมูล
-            </StationActionButton>
-            <StationActionButton>
-              Export <Download size={24} />
-            </StationActionButton>
-          </>
-        )}
-      />
+      <SectionHeader>
+        <h2 className="title">ตารางข้อมูลรายชั่วโมง</h2>
+        <div className="actions">
+          <ActionButton type="button">เลือกช่วงเวลาดูข้อมูล</ActionButton>
+          <ActionButton type="button">
+            Export <Download size={18} />
+          </ActionButton>
+        </div>
+      </SectionHeader>
 
-      <RecentReadings readings={stationHistory} />
+      <StationHourlyTable readings={stationHistory} />
     </StationPageContainer>
   );
 }

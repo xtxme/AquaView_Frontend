@@ -17,7 +17,7 @@ const InfoItem = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'Kanit', sans-serif;
+  font-family: var(--font-kanit), sans-serif;
   font-size: 16px;
   font-weight: 600;
 `;
@@ -35,8 +35,7 @@ const StatusBadge = styled.div<{ status: 'normal' | 'warning' | 'critical' }>`
   padding: 4px 12px;
   border-radius: 8px;
   margin-left: auto;
-  font-family: 'Inter', sans-serif;
-  font-family: 'Kanit', sans-serif;
+  font-family: var(--font-kanit), sans-serif;
   font-size: 14px;
   font-weight: 500;
 

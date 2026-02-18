@@ -43,10 +43,10 @@ const station002 = {
   longitude: 98.9853,
   bank_level_m: 5.2,
   sensor_height_m: 0.5,
-  status: 'green' as const,
-  percent_of_bank: 52.5,
+  status: 'yellow' as const,
+  percent_of_bank: 86.5,
   latest_reading: {
-    water_level_m: 2.730,
+    water_level_m: 4.498,
     ts: new Date(now.getTime() - 2.5 * 60 * 60 * 1000).toISOString()
   }
 }
@@ -60,10 +60,10 @@ const station003 = {
   longitude: 99.0158,
   bank_level_m: 4.8,
   sensor_height_m: 0.5,
-  status: 'green' as const,
-  percent_of_bank: 48.1,
+  status: 'red' as const,
+  percent_of_bank: 108.2,
   latest_reading: {
-    water_level_m: 2.309,
+    water_level_m: 5.194,
     ts: new Date(now.getTime() - (2.5 + 1.8) * 60 * 60 * 1000).toISOString()
   }
 }
@@ -77,10 +77,10 @@ const station004 = {
   longitude: 99.0081,
   bank_level_m: 5.5,
   sensor_height_m: 0.5,
-  status: 'green' as const,
-  percent_of_bank: 41.6,
+  status: 'red' as const,
+  percent_of_bank: 126.4,
   latest_reading: {
-    water_level_m: 2.288,
+    water_level_m: 6.952,
     ts: new Date(now.getTime() - (2.5 + 1.8 + 4.2) * 60 * 60 * 1000).toISOString()
   }
 }

@@ -13,7 +13,7 @@ const Container = styled.div`
 `;
 
 const Title = styled.h2`
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-kanit), sans-serif;
   font-size: 20px;
   font-weight: 700;
   color: var(--color-primary);
@@ -27,7 +27,7 @@ const TableWrapper = styled.div`
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  font-family: 'Kanit', sans-serif;
+  font-family: var(--font-kanit), sans-serif;
 `;
 
 const Th = styled.th`
@@ -37,7 +37,7 @@ const Th = styled.th`
   color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 500;
-  font-family: 'Kanit', sans-serif;
+  font-family: var(--font-kanit), sans-serif;
 `;
 
 const Td = styled.td`
@@ -45,7 +45,7 @@ const Td = styled.td`
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
   font-size: 14px;
-  font-family: 'Kanit', sans-serif;
+  font-family: var(--font-kanit), sans-serif;
 
   &:last-child {
     text-align: right;
@@ -58,7 +58,7 @@ const TrendBadge = styled.span<{ direction: 'up' | 'down' | 'stable' }>`
   gap: 4px;
   font-size: 12px;
   font-weight: 500;
-  font-family: 'Kanit', sans-serif;
+  font-family: var(--font-kanit), sans-serif;
 
   ${({ direction }) => {
         switch (direction) {

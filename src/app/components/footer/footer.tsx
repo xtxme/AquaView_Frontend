@@ -4,7 +4,9 @@ import styled from "styled-components";
 
 const Footer = styled.footer`
   width: 100%;
-  height: 112px;
+  min-height: 80px;
+  padding: 2px 0;
+  box-sizing: border-box;
   background-color: var(--color-surface);
   box-shadow: var(--shadow-soft);
   display: flex;
@@ -24,7 +26,8 @@ const Footer = styled.footer`
   }
 
   @media (max-width: 900px) {
-    height: 96px;
+    min-height: 64px;
+    padding: 2px 0;
   }
 `;
 

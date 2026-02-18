@@ -99,41 +99,15 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                     }).addTo(map)
                     marker.setZIndexOffset(1000)
 
-                    const prevStationId = getPreviousStation(station.station_id)
-                    const prevStation = prevStationId ? stations.find(s => s.station_id === prevStationId) : null
+                    const popupBg = station.status === 'red' ? '#fee2e2' : station.status === 'yellow' ? '#fef3c7' : '#d1fae5'
+                    const popupFg = station.status === 'red' ? '#991b1b' : station.status === 'yellow' ? '#92400e' : '#065f46'
+                    const popupText = station.status === 'red' ? 'อันตราย' : station.status === 'yellow' ? 'เฝ้าระวัง' : 'ปกติ'
 
-                    let timeText = ''
-                    if (prevStation && prevStation.latest_reading?.ts && station.latest_reading?.ts) {
-                        const prevTime = new Date(prevStation.latest_reading.ts).getTime()
-                        const stationTime = new Date(station.latest_reading.ts).getTime()
-                        const diffHours = (stationTime - prevTime) / (1000 * 60 * 60)
-
-                        if (diffHours >= 1) {
-                            const hours = Math.floor(diffHours)
-                            const minutes = Math.round((diffHours - hours) * 60)
-                            if (minutes > 0) {
-                                timeText = `<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${hours} ชั่วโมง ${minutes} นาที</div>`
-                            } else {
-                                timeText = `<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${hours} ชั่วโมง</div>`
-                            }
-                        } else if (diffHours > 0) {
-                            const minutes = Math.round(diffHours * 60)
-                            timeText = `<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${minutes} นาที</div>`
-                        } else if (diffHours === 0) {
-                            timeText = '<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">0 นาที</div>'
-                        } else {
-                            timeText = `<div style="font-size: 12px; color: #ef4444; margin-bottom: 4px;">-${Math.abs(Math.floor(diffHours))} ชั่วโมง ${Math.abs(Math.round((diffHours - Math.floor(diffHours)) * 60))} นาที</div>`
-                        }
-                    } else {
-                        timeText = '<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">ไม่มีข้อมูล</div>'
-                    }
-
-                    const popupContent = `<div style="min-width: 200px; font-family: sans-serif;">
+                    const popupContent = `<div style="min-width: 200px; font-family: var(--font-kanit), sans-serif;">
                         <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #1f2937;">${station.name}</div>
-                        ${timeText}
                         <div style="font-size: 12px; color: #4b5563; margin-bottom: 4px;"><strong>ระดับน้ำ:</strong> ${station.latest_reading?.water_level_m?.toFixed(2) || 'N/A'} ม.</div>
                         <div style="font-size: 12px; color: #4b5563; margin-bottom: 8px;"><strong>ใกล้ตลิ่ง:</strong> ${station.percent_of_bank.toFixed(1)}%</div>
-                        <div style="padding: 4px 8px; background: ${station.status === 'red' ? '#fee2e2' : station.status === 'yellow' ? '#fef3c7' : '#d1fae5'}; color: ${station.status === 'red' ? '#991b1b' : station.status === 'yellow' ? '#92400e' : '#065f46'}; border-radius: 4px; font-size: 11px; font-weight: 600; text-align: center;">${station.status === 'red' ? 'อันตราย' : station.status === 'yellow' ? 'เฝ้าระวัง' : 'ปกติ'}</div>
+                        <div style="padding: 4px 8px; background: ${popupBg}; color: ${popupFg}; border-radius: 4px; font-size: 11px; font-weight: 600; text-align: center;">${popupText}</div>
                     </div>`
 
                     marker.bindPopup(popupContent)
@@ -226,16 +200,16 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                 <div className="text-sm font-semibold mb-3 text-white">เกณฑ์ระดับน้ำ</div>
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white shadow-sm"></div>
-                        <span className="text-xs text-gray-200">ปกติ &lt; 80% ของระดับอันตราย</span>
+                        <div className="w-4 h-4 rounded-full border-2 shadow-sm" style={{ backgroundColor: 'var(--status-safe-bg)', borderColor: 'var(--status-safe)' }}></div>
+                        <span className="text-xs" style={{ color: 'var(--status-safe)' }}>ปกติ &lt; 80% ของระดับอันตราย</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-yellow-500 border-2 border-white shadow-sm"></div>
-                        <span className="text-xs text-gray-200">เฝ้าระวัง ≥ 80%</span>
+                        <div className="w-4 h-4 rounded-full border-2 shadow-sm" style={{ backgroundColor: 'var(--status-warning-bg)', borderColor: 'var(--status-warning)' }}></div>
+                        <span className="text-xs" style={{ color: 'var(--status-warning)' }}>เฝ้าระวัง 80% - 99.9%</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow-sm"></div>
-                        <span className="text-xs text-gray-200">อันตราย ≥ 100%</span>
+                        <div className="w-4 h-4 rounded-full border-2 shadow-sm" style={{ backgroundColor: 'var(--status-danger-bg)', borderColor: 'var(--status-danger)' }}></div>
+                        <span className="text-xs" style={{ color: 'var(--status-danger)' }}>อันตราย ≥ 100%</span>
                     </div>
                 </div>
             </div>

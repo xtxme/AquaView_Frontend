@@ -2,6 +2,7 @@
 
 import styled from "styled-components";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import "leaflet/dist/leaflet.css";
 
 const Header = styled.header`
@@ -10,10 +11,12 @@ const Header = styled.header`
   box-shadow: var(--shadow-soft);
   height: 80px;
   display: flex;
-  padding-left: 68px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px 0 68px;
 
   .content{
-    padding: 22px 32px;
+    padding: 0;
     display: flex;
     align-items: center;
     gap: 16px;
@@ -44,7 +47,8 @@ const Header = styled.header`
     display: flex;
     align-items: flex-start;
     gap: 36px;
-    padding-left: 360px;
+    margin-left: auto;
+    padding-right: 56px;
     padding-top: 16px;
   }
 
@@ -94,6 +98,10 @@ interface AppHeaderProps {
 }
 
 export default function AppHeader({ activePage = "home" }: AppHeaderProps) {
+  const pathname = usePathname();
+  const resolvedActivePage =
+    pathname?.startsWith("/dashboard") ? "dashboard" : pathname === "/" ? "home" : activePage;
+
   return (
     <Header>
       <div className="content">
@@ -104,12 +112,14 @@ export default function AppHeader({ activePage = "home" }: AppHeaderProps) {
         </div>
       </div>
       <div className="content-right">
-        <div className={`nav-item ${activePage === "home" ? "active" : ""}`}>
-          <img className="triangle-icon" src="/triangle-down.svg" alt="" />
-          <span className="nav-text">Home</span>
-        </div>
-        <StyledLink href="/dashboard">
-          <div className={`nav-item ${activePage === "dashboard" ? "active" : ""}`}>
+        <StyledLink href="/" aria-current={resolvedActivePage === "home" ? "page" : undefined}>
+          <div className={`nav-item ${resolvedActivePage === "home" ? "active" : ""}`}>
+            <img className="triangle-icon" src="/triangle-down.svg" alt="" />
+            <span className="nav-text">Home</span>
+          </div>
+        </StyledLink>
+        <StyledLink href="/dashboard" aria-current={resolvedActivePage === "dashboard" ? "page" : undefined}>
+          <div className={`nav-item ${resolvedActivePage === "dashboard" ? "active" : ""}`}>
             <img className="triangle-icon" src="/triangle-down.svg" alt="" />
             <span className="nav-text">Dashboard</span>
           </div>

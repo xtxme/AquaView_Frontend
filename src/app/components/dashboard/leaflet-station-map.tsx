@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { Map as LeafletMap, Marker, Polyline } from 'leaflet'
+import { buildStationPopupContent } from '@/app/components/home/station-popup-content'
 
 interface Station {
     station_id: string
@@ -80,6 +81,60 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                     document.head.appendChild(link)
                 }
 
+                if (!document.getElementById('leaflet-marker-effect-css')) {
+                    const style = document.createElement('style')
+                    style.id = 'leaflet-marker-effect-css'
+                    style.textContent = `
+                      .aqv-marker-wrap {
+                        width: 56px;
+                        height: 56px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        position: relative;
+                      }
+
+                      .aqv-marker-pulse {
+                        position: absolute;
+                        width: 56px;
+                        height: 56px;
+                        border-radius: 50%;
+                        background: var(--tone-soft);
+                        animation: aqv-pulse 1.9s ease-in-out infinite;
+                      }
+
+                      .aqv-marker-core {
+                        width: 44px;
+                        height: 44px;
+                        border-radius: 50%;
+                        background: var(--tone);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: var(--shadow-soft), inset 0 0 0 2px var(--overlay-white-strong);
+                        position: relative;
+                        z-index: 1;
+                      }
+
+                      .aqv-marker-inner {
+                        width: 34px;
+                        height: 34px;
+                        border-radius: 50%;
+                        background: var(--overlay-white-soft);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      }
+
+                      @keyframes aqv-pulse {
+                        0% { transform: scale(0.9); opacity: 0.65; }
+                        70% { transform: scale(1.08); opacity: 0.18; }
+                        100% { transform: scale(1.08); opacity: 0; }
+                      }
+                    `
+                    document.head.appendChild(style)
+                }
+
                 const map = leaflet.map(mapRef.current, {
                     center: [18.7883, 98.9853],
                     zoom: 10,
@@ -107,14 +162,13 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
 
                     return leaflet.divIcon({
                         html: `
-                            <div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;">
-                                <div style="width:56px;height:56px;border-radius:50%;background:${toneSoft};display:flex;align-items:center;justify-content:center;">
-                                    <div style="width:44px;height:44px;border-radius:50%;background:${tone};display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-soft), inset 0 0 0 2px var(--overlay-white-strong);">
-                                        <div style="width:34px;height:34px;border-radius:50%;background:var(--overlay-white-soft);display:flex;align-items:center;justify-content:center;">
-                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="var(--color-surface)" aria-hidden="true">
-                                                <path d="M12 2.25c0 0-7 6.58-7 11.2A7 7 0 0 0 19 13.45c0-4.62-7-11.2-7-11.2z"/>
-                                            </svg>
-                                        </div>
+                            <div class="aqv-marker-wrap" style="--tone:${tone};--tone-soft:${toneSoft};">
+                                <div class="aqv-marker-pulse"></div>
+                                <div class="aqv-marker-core">
+                                    <div class="aqv-marker-inner">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="var(--color-surface)" aria-hidden="true">
+                                            <path d="M12 2.25c0 0-7 6.58-7 11.2A7 7 0 0 0 19 13.45c0-4.62-7-11.2-7-11.2z"/>
+                                        </svg>
                                     </div>
                                 </div>
                             </div>
@@ -145,43 +199,23 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                     marker.setZIndexOffset(1000)
 
                     const prevStationId = getPreviousStation(station.station_id)
-                    const prevStation = prevStationId ? currentStations.find(s => s.station_id === prevStationId) : null
+                    const prevStation = prevStationId ? currentStations.find(s => s.station_id === prevStationId) ?? null : null
 
-                    let timeText = ''
-                    if (prevStation && prevStation.latest_reading?.ts && station.latest_reading?.ts) {
-                        const prevTime = new Date(prevStation.latest_reading.ts).getTime()
-                        const stationTime = new Date(station.latest_reading.ts).getTime()
-                        const diffHours = (stationTime - prevTime) / (1000 * 60 * 60)
+                    const popupContent = buildStationPopupContent(station, prevStation)
 
-                        if (diffHours >= 1) {
-                            const hours = Math.floor(diffHours)
-                            const minutes = Math.round((diffHours - hours) * 60)
-                            if (minutes > 0) {
-                                timeText = `<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;">${hours} ชั่วโมง ${minutes} นาที</div>`
-                            } else {
-                                timeText = `<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;">${hours} ชั่วโมง</div>`
-                            }
-                        } else if (diffHours > 0) {
-                            const minutes = Math.round(diffHours * 60)
-                            timeText = `<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;">${minutes} นาที</div>`
-                        } else if (diffHours === 0) {
-                            timeText = '<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;">0 นาที</div>'
-                        } else {
-                            timeText = `<div style="font-size: 12px; color: var(--status-danger); margin-bottom: 4px;">-${Math.abs(Math.floor(diffHours))} ชั่วโมง ${Math.abs(Math.round((diffHours - Math.floor(diffHours)) * 60))} นาที</div>`
-                        }
-                    } else {
-                        timeText = '<div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;">ไม่มีข้อมูล</div>'
-                    }
+                    marker.bindPopup(popupContent, {
+                        closeButton: false,
+                        autoClose: true,
+                        closeOnClick: false,
+                    })
 
-                    const popupContent = `<div style="min-width: 200px; font-family: sans-serif;">
-                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: var(--color-text);">${station.name}</div>
-                        ${timeText}
-                        <div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 4px;"><strong>ระดับน้ำ:</strong> ${station.latest_reading?.water_level_m?.toFixed(2) || 'N/A'} ม.</div>
-                        <div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px;"><strong>ใกล้ตลิ่ง:</strong> ${station.percent_of_bank.toFixed(1)}%</div>
-                        <div style="padding: 4px 8px; background: ${station.status === 'red' ? 'var(--status-danger-bg)' : station.status === 'yellow' ? 'var(--status-warning-bg)' : 'var(--status-safe-bg)'}; color: ${station.status === 'red' ? 'var(--status-danger)' : station.status === 'yellow' ? 'var(--status-warning)' : 'var(--status-safe)'}; border-radius: 4px; font-size: 11px; font-weight: 600; text-align: center;">${station.status === 'red' ? 'อันตราย' : station.status === 'yellow' ? 'เฝ้าระวัง' : 'ปกติ'}</div>
-                    </div>`
+                    marker.on('mouseover', () => {
+                        marker.openPopup()
+                    })
 
-                    marker.bindPopup(popupContent)
+                    marker.on('mouseout', () => {
+                        marker.closePopup()
+                    })
 
                     marker.on('click', () => {
                         if (currentOnStationClick) {
@@ -270,16 +304,16 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
                 <div className="text-sm font-semibold mb-3 text-white">เกณฑ์ระดับน้ำ</div>
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white shadow-sm"></div>
-                        <span className="text-xs text-gray-200">ปกติ &lt; 80% ของระดับอันตราย</span>
+                        <div className="w-4 h-4 rounded-full border-2 shadow-sm" style={{ backgroundColor: 'var(--status-safe-bg)', borderColor: 'var(--status-safe)' }}></div>
+                        <span className="text-xs" style={{ color: 'var(--status-safe)' }}>ปกติ &lt; 80% ของระดับอันตราย</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-yellow-500 border-2 border-white shadow-sm"></div>
-                        <span className="text-xs text-gray-200">เฝ้าระวัง ≥ 80%</span>
+                        <div className="w-4 h-4 rounded-full border-2 shadow-sm" style={{ backgroundColor: 'var(--status-warning-bg)', borderColor: 'var(--status-warning)' }}></div>
+                        <span className="text-xs" style={{ color: 'var(--status-warning)' }}>เฝ้าระวัง 80% - 99.9%</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow-sm"></div>
-                        <span className="text-xs text-gray-200">อันตราย ≥ 100%</span>
+                        <div className="w-4 h-4 rounded-full border-2 shadow-sm" style={{ backgroundColor: 'var(--status-danger-bg)', borderColor: 'var(--status-danger)' }}></div>
+                        <span className="text-xs" style={{ color: 'var(--status-danger)' }}>อันตราย ≥ 100%</span>
                     </div>
                 </div>
             </div>
