@@ -1,8 +1,12 @@
 "use client"
 
 import { useEffect, useRef, useState } from 'react'
-import type { Map as LeafletMap, Marker, Polyline } from 'leaflet'
+import type { GeoJSON as LeafletGeoJSON, Map as LeafletMap, Marker, Polyline } from 'leaflet'
+import type { GeoJsonObject } from 'geojson'
 import { buildStationPopupContent } from '@/app/components/home/station-popup-content'
+import { fetchRiverGeometryFromOverpass } from '@/lib/osm/fetch-river-geometry'
+import { getRiverConfigByKey } from '@/lib/osm/config'
+import type { BBox } from '@/lib/osm/types'
 
 interface Station {
     station_id: string
@@ -29,16 +33,40 @@ interface LeafletStationMapProps {
     reaches?: Reach[]
     onStationClick?: (stationId: string) => void
     selectedProvince?: string
+    riverKey?: string
 }
 
 type LeafletModule = typeof import('leaflet')
 
-export function LeafletStationMap({ stations, reaches = [], onStationClick, selectedProvince }: LeafletStationMapProps) {
+function buildStationsBbox(stations: Station[]): BBox | null {
+    if (stations.length === 0) {
+        return null
+    }
+
+    const longitudes = stations.map((station) => station.longitude)
+    const latitudes = stations.map((station) => station.latitude)
+
+    return [
+        Math.min(...longitudes),
+        Math.min(...latitudes),
+        Math.max(...longitudes),
+        Math.max(...latitudes),
+    ]
+}
+
+export function LeafletStationMap({
+    stations,
+    reaches = [],
+    onStationClick,
+    selectedProvince,
+    riverKey = 'ping'
+}: LeafletStationMapProps) {
     const mapRef = useRef<HTMLDivElement>(null)
     const mapRefDirect = useRef<LeafletMap | null>(null)
     const markersRef = useRef<Marker[]>([])
     const polylinesRef = useRef<Polyline[]>([])
     const labelsRef = useRef<Marker[]>([])
+    const riverLayerRef = useRef<LeafletGeoJSON | null>(null)
     const stationsRef = useRef(stations)
     const reachesRef = useRef(reaches)
     const onStationClickRef = useRef(onStationClick)
@@ -283,8 +311,65 @@ export function LeafletStationMap({ stations, reaches = [], onStationClick, sele
             markersRef.current = []
             polylinesRef.current = []
             labelsRef.current = []
+            riverLayerRef.current = null
         }
     }, [])
+
+    useEffect(() => {
+        if (!L || !mapRefDirect.current || stations.length === 0) {
+            return
+        }
+
+        const map = mapRefDirect.current
+        const river = getRiverConfigByKey(riverKey)
+        const bbox = buildStationsBbox(stations)
+        let cancelled = false
+
+        if (!river || !bbox) {
+            return
+        }
+
+        const loadRiverGeometry = async () => {
+            try {
+                const riverGeometry = await fetchRiverGeometryFromOverpass(river, bbox)
+                if (cancelled || !mapRefDirect.current) {
+                    return
+                }
+
+                if (riverLayerRef.current) {
+                    map.removeLayer(riverLayerRef.current)
+                    riverLayerRef.current = null
+                }
+
+                const layer = L.geoJSON(riverGeometry.geojson as GeoJsonObject, {
+                    style: {
+                        color: '#0EA5E9',
+                        weight: 5,
+                        opacity: 0.82,
+                        dashArray: riverGeometry.source === 'way-fallback' ? '14 10' : undefined,
+                        lineCap: 'round',
+                    },
+                }).addTo(map)
+
+                layer.bringToBack()
+                riverLayerRef.current = layer
+            } catch (error) {
+                if (!cancelled) {
+                    console.error('[LeafletStationMap] Failed to load river geometry:', error)
+                }
+            }
+        }
+
+        loadRiverGeometry()
+
+        return () => {
+            cancelled = true
+            if (mapRefDirect.current && riverLayerRef.current) {
+                mapRefDirect.current.removeLayer(riverLayerRef.current)
+                riverLayerRef.current = null
+            }
+        }
+    }, [L, riverKey, stations])
 
     useEffect(() => {
         if (selectedProvince && mapRefDirect.current && L && stations.length > 0) {
