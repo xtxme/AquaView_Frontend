@@ -7,10 +7,15 @@ import { MOCK_STATIONS, MOCK_READINGS, MOCK_THRESHOLDS } from '@/lib/mock-data';
 
 const StyledDashboardSection = styled.div`
   width: 100%;
+  margin-top: 24px;
   margin-bottom: 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
+
+  @media (max-width: 900px) {
+    margin-top: 16px;
+  }
 `;
 
 const StyledSectionHeader = styled.div`

@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GeoJSON as LeafletGeoJSON, Map as LeafletMap, Marker, Polyline } from 'leaflet'
-import type { GeoJsonObject } from 'geojson'
+import type { Feature, GeoJsonObject, LineString, MultiLineString, Position } from 'geojson'
 import { buildStationPopupContent } from '@/app/components/home/station-popup-content'
 import { fetchRiverGeometryFromOverpass } from '@/lib/osm/fetch-river-geometry'
 import { getRiverConfigByKey } from '@/lib/osm/config'
-import type { BBox } from '@/lib/osm/types'
+import { computeReachDistanceOnRiver } from '@/lib/osm/reach-distance'
+import type { BBox, ReachRiverDistance, RiverGeometry } from '@/lib/osm/types'
 
 interface Station {
     station_id: string
@@ -37,6 +38,7 @@ interface LeafletStationMapProps {
 }
 
 type LeafletModule = typeof import('leaflet')
+type ReachDistanceMap = Map<string, ReachRiverDistance>
 
 function buildStationsBbox(stations: Station[]): BBox | null {
     if (stations.length === 0) {
@@ -52,6 +54,99 @@ function buildStationsBbox(stations: Station[]): BBox | null {
         Math.max(...longitudes),
         Math.max(...latitudes),
     ]
+}
+
+function getReachKey(reach: Reach): string {
+    return `${reach.upstream_station}->${reach.downstream_station}`
+}
+
+function computePolylineMidpoint(coordinates: Position[]): [number, number] | null {
+    if (coordinates.length < 2) {
+        return null
+    }
+
+    const toRad = (value: number) => (value * Math.PI) / 180
+    const earthRadiusM = 6371000
+
+    const segmentLengths: number[] = []
+    let totalLength = 0
+
+    for (let index = 1; index < coordinates.length; index += 1) {
+        const [lon1, lat1] = coordinates[index - 1]
+        const [lon2, lat2] = coordinates[index]
+        const dLat = toRad(lat2 - lat1)
+        const dLon = toRad(lon2 - lon1)
+        const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        const segmentLength = earthRadiusM * c
+        segmentLengths.push(segmentLength)
+        totalLength += segmentLength
+    }
+
+    if (totalLength <= 0) {
+        const [lon, lat] = coordinates[Math.floor(coordinates.length / 2)]
+        return [lat, lon]
+    }
+
+    const midpointTarget = totalLength / 2
+    let traversed = 0
+
+    for (let index = 1; index < coordinates.length; index += 1) {
+        const segmentLength = segmentLengths[index - 1]
+        if (traversed + segmentLength >= midpointTarget) {
+            const ratio = (midpointTarget - traversed) / segmentLength
+            const [lon1, lat1] = coordinates[index - 1]
+            const [lon2, lat2] = coordinates[index]
+            const lat = lat1 + (lat2 - lat1) * ratio
+            const lon = lon1 + (lon2 - lon1) * ratio
+            return [lat, lon]
+        }
+        traversed += segmentLength
+    }
+
+    const [lon, lat] = coordinates[coordinates.length - 1]
+    return [lat, lon]
+}
+
+function computeGreatCircleDistanceKm(
+    from: { latitude: number; longitude: number },
+    to: { latitude: number; longitude: number }
+): number {
+    const toRad = (value: number) => (value * Math.PI) / 180
+    const earthRadiusKm = 6371
+    const dLat = toRad(to.latitude - from.latitude)
+    const dLon = toRad(to.longitude - from.longitude)
+    const lat1 = toRad(from.latitude)
+    const lat2 = toRad(to.latitude)
+
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+    return earthRadiusKm * c
+}
+
+function formatReachTime(hoursFloat: number): string {
+    const hours = Math.floor(hoursFloat)
+    const minutes = Math.round((hoursFloat - hours) * 60)
+
+    if (hours > 0 && minutes > 0) {
+        return `${hours} ชั่วโมง ${minutes} นาที`
+    }
+    if (hours > 0) {
+        return `${hours} ชั่วโมง`
+    }
+    return `${minutes} นาที`
+}
+
+function buildReachTooltip(timeText: string, distance?: number): string {
+    if (typeof distance === 'number') {
+        return `เวลาเดินทาง: ${timeText}<br/>ระยะตามลำน้ำ: ${distance.toFixed(2)} กม.`
+    }
+    return `เวลาเดินทาง: ${timeText}<br/>ระยะตามลำน้ำ: ไม่พบช่วงแม่น้ำที่ต่อเนื่อง`
 }
 
 export function LeafletStationMap({
@@ -70,7 +165,12 @@ export function LeafletStationMap({
     const stationsRef = useRef(stations)
     const reachesRef = useRef(reaches)
     const onStationClickRef = useRef(onStationClick)
+    const riverGeometryRef = useRef<RiverGeometry | null>(null)
+    const reachDistanceMapRef = useRef<ReachDistanceMap>(new Map())
+    const highlightLayerRef = useRef<LeafletGeoJSON | null>(null)
+    const distanceLabelRef = useRef<Marker | null>(null)
     const [L, setL] = useState<LeafletModule | null>(null)
+    const [, setActiveReachKey] = useState<string | null>(null)
 
     useEffect(() => {
         stationsRef.current = stations
@@ -83,6 +183,55 @@ export function LeafletStationMap({
     useEffect(() => {
         onStationClickRef.current = onStationClick
     }, [onStationClick])
+
+    const clearReachHighlight = useCallback(() => {
+        if (!mapRefDirect.current) {
+            return
+        }
+
+        if (highlightLayerRef.current) {
+            mapRefDirect.current.removeLayer(highlightLayerRef.current)
+            highlightLayerRef.current = null
+        }
+
+        if (distanceLabelRef.current) {
+            mapRefDirect.current.removeLayer(distanceLabelRef.current)
+            distanceLabelRef.current = null
+        }
+    }, [])
+
+    const buildReachDistanceMap = useCallback((
+        riverFeature: Feature<LineString | MultiLineString>,
+        currentStations: Station[],
+        currentReaches: Reach[]
+    ): ReachDistanceMap => {
+        const stationMap = new Map(currentStations.map((station) => [station.station_id, station]))
+        const nextMap: ReachDistanceMap = new Map()
+
+        currentReaches.forEach((reach) => {
+            const upstream = stationMap.get(reach.upstream_station)
+            const downstream = stationMap.get(reach.downstream_station)
+            if (!upstream || !downstream) {
+                return
+            }
+
+            const result = computeReachDistanceOnRiver(
+                riverFeature,
+                [upstream.longitude, upstream.latitude],
+                [downstream.longitude, downstream.latitude],
+                reach.upstream_station,
+                reach.downstream_station
+            )
+
+            if (!result) {
+                return
+            }
+
+            nextMap.set(getReachKey(reach), result)
+        })
+
+        return nextMap
+    }, [])
 
     useEffect(() => {
         let isCancelled = false
@@ -268,21 +417,83 @@ export function LeafletStationMap({
                             const midLat = (upstreamStation.latitude + downstreamStation.latitude) / 2
                             const midLng = (upstreamStation.longitude + downstreamStation.longitude) / 2
 
-                            const hours = Math.floor(reach.typical_travel_hr)
-                            const minutes = Math.round((reach.typical_travel_hr - hours) * 60)
-                            const timeText = hours > 0 && minutes > 0 ? `${hours} ชั่วโมง ${minutes} นาที` : hours > 0 ? `${hours} ชั่วโมง` : `${minutes} นาที`
+                            const timeText = formatReachTime(reach.typical_travel_hr)
+                            const reachKey = getReachKey(reach)
+                            const computedDistance = reachDistanceMapRef.current.get(reachKey)?.distanceKm
+                            const previewDistanceKm = computedDistance ?? computeGreatCircleDistanceKm(
+                                { latitude: upstreamStation.latitude, longitude: upstreamStation.longitude },
+                                { latitude: downstreamStation.latitude, longitude: downstreamStation.longitude }
+                            )
+                            const distancePrefix = computedDistance ? 'ระยะทางน้ำ' : 'ระยะทางน้ำ (ตัวอย่าง)'
 
                             const travelTimeLabel = leaflet.divIcon({
-                                html: `<div style="background: var(--color-surface); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--color-text); box-shadow: var(--shadow-soft); border: 2px solid var(--color-secondary); white-space: nowrap;">⏱️ ${timeText}</div>`,
+                                html: `<div style="background: var(--color-surface); padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--color-text); box-shadow: var(--shadow-soft); border: 2px solid var(--color-secondary); white-space: nowrap;">
+                                    <div>⏱️ ${timeText}</div>
+                                    <div style="margin-top:2px; font-size:11px; color:#1D4ED8;">💧 ${distancePrefix} ${previewDistanceKm.toFixed(1)} กม.</div>
+                                </div>`,
                                 className: 'travel-time-label',
-                                iconSize: [150, 30],
-                                iconAnchor: [75, 15],
+                                iconSize: [190, 44],
+                                iconAnchor: [95, 22],
                             })
 
                             const label = leaflet.marker([midLat, midLng], { icon: travelTimeLabel }).addTo(map)
                             label.setZIndexOffset(500)
 
-                            polyline.bindTooltip(`${upstreamStation.name} → ${downstreamStation.name}<br>เวลาเดินทาง: ${timeText}`, { sticky: true })
+                            polyline.bindTooltip(
+                                `${upstreamStation.name} → ${downstreamStation.name}<br>${buildReachTooltip(timeText, previewDistanceKm)}`,
+                                { sticky: true }
+                            )
+
+                            polyline.on('mouseover', () => {
+                                setActiveReachKey(reachKey)
+                                clearReachHighlight()
+
+                                const reachDistance = reachDistanceMapRef.current.get(reachKey)
+                                const tooltipContent = reachDistance
+                                    ? `${upstreamStation.name} → ${downstreamStation.name}<br>${buildReachTooltip(timeText, reachDistance.distanceKm)}`
+                                    : `${upstreamStation.name} → ${downstreamStation.name}<br>${buildReachTooltip(timeText)}`
+                                polyline.bindTooltip(tooltipContent, { sticky: true })
+                                polyline.openTooltip()
+
+                                if (!reachDistance) {
+                                    return
+                                }
+
+                                const segmentLayer = leaflet.geoJSON(reachDistance.segmentGeojson as GeoJsonObject, {
+                                    style: {
+                                        color: '#2563EB',
+                                        weight: 6,
+                                        opacity: 0.95,
+                                        lineCap: 'round',
+                                    },
+                                }).addTo(map)
+                                segmentLayer.bringToFront()
+                                highlightLayerRef.current = segmentLayer
+
+                                const segmentCoordinates = reachDistance.segmentGeojson.geometry.coordinates as Position[]
+                                const midpoint = computePolylineMidpoint(segmentCoordinates)
+                                if (midpoint) {
+                                    const distanceIcon = leaflet.divIcon({
+                                        html: `<div style="background:#ffffff; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:700; color:#1D4ED8; box-shadow: var(--shadow-soft); border:2px solid #2563EB; white-space:nowrap;">${reachDistance.distanceKm.toFixed(2)} กม.</div>`,
+                                        className: 'reach-distance-label',
+                                        iconSize: [110, 30],
+                                        iconAnchor: [55, 15],
+                                    })
+                                    const distanceMarker = leaflet.marker(midpoint, { icon: distanceIcon }).addTo(map)
+                                    distanceMarker.setZIndexOffset(800)
+                                    distanceLabelRef.current = distanceMarker
+                                }
+                            })
+
+                            polyline.on('mouseout', () => {
+                                setActiveReachKey((prev) => {
+                                    if (prev === getReachKey(reach)) {
+                                        return null
+                                    }
+                                    return prev
+                                })
+                                clearReachHighlight()
+                            })
 
                             polylinesRef.current.push(polyline)
                             labelsRef.current.push(label)
@@ -311,9 +522,13 @@ export function LeafletStationMap({
             markersRef.current = []
             polylinesRef.current = []
             labelsRef.current = []
+            reachDistanceMapRef.current.clear()
+            riverGeometryRef.current = null
+            setActiveReachKey(null)
+            clearReachHighlight()
             riverLayerRef.current = null
         }
-    }, [])
+    }, [clearReachHighlight])
 
     useEffect(() => {
         if (!L || !mapRefDirect.current || stations.length === 0) {
@@ -353,9 +568,19 @@ export function LeafletStationMap({
 
                 layer.bringToBack()
                 riverLayerRef.current = layer
+                riverGeometryRef.current = riverGeometry
+
+                reachDistanceMapRef.current = buildReachDistanceMap(
+                    riverGeometry.geojson as Feature<LineString | MultiLineString>,
+                    stations,
+                    reaches
+                )
             } catch (error) {
                 if (!cancelled) {
                     console.error('[LeafletStationMap] Failed to load river geometry:', error)
+                    riverGeometryRef.current = null
+                    reachDistanceMapRef.current = new Map()
+                    clearReachHighlight()
                 }
             }
         }
@@ -368,8 +593,11 @@ export function LeafletStationMap({
                 mapRefDirect.current.removeLayer(riverLayerRef.current)
                 riverLayerRef.current = null
             }
+            riverGeometryRef.current = null
+            reachDistanceMapRef.current = new Map()
+            clearReachHighlight()
         }
-    }, [L, riverKey, stations])
+    }, [L, buildReachDistanceMap, clearReachHighlight, reaches, riverKey, stations])
 
     useEffect(() => {
         if (selectedProvince && mapRefDirect.current && L && stations.length > 0) {

@@ -75,6 +75,15 @@ export default function DashboardPageContent() {
     });
   }, [filteredStationIds]);
 
+  const predictionStartIndex = useMemo(() => {
+    if (chartData.length < 8) {
+      return undefined;
+    }
+
+    // Reserve the latest 6 points as forecast to visualize prediction segment.
+    return chartData.length - 6;
+  }, [chartData.length]);
+
   const chartMaxValue = useMemo(() => {
     if (filteredStations.length === 0) return 5;
     const maxBankLevel = Math.max(...filteredStations.map((station) => station.bank_level_m));
@@ -104,6 +113,7 @@ export default function DashboardPageContent() {
         title="กราฟแนวโน้มระดับน้ำ (ค่าเฉลี่ย/ค่าสูงสุด ของสถานีที่เลือก)"
         data={chartData}
         maxValue={chartMaxValue}
+        predictionStartIndex={predictionStartIndex}
       />
 
       <StationBarChart stationIds={filteredStationIds} />

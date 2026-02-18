@@ -13,3 +13,11 @@ export type RiverConfig = {
   key: string
   names: string[]
 }
+
+export type ReachRiverDistance = {
+  upstreamStationId: string
+  downstreamStationId: string
+  distanceKm: number
+  source: 'river-line'
+  segmentGeojson: Feature<LineString>
+}

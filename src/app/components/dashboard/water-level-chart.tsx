@@ -415,7 +415,7 @@ export default function WaterLevelChart({
             {predictionDividerIndex !== null && (
               <ReferenceLine
                 x={chartData[predictionDividerIndex]?.timestamp}
-                stroke="var(--chart-line-prediction)"
+                stroke="var(--color-text-subtle)"
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{ value: 'เวลาปัจจุบัน', position: 'left', fill: 'var(--color-text-muted)', fontSize: 11, fontFamily: "'Kanit', sans-serif", fontWeight: 500 }}
