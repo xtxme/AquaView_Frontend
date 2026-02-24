@@ -62,6 +62,7 @@ export default function DashboardPageContent() {
         ? levels.reduce((sum, value) => sum + value, 0) / levels.length
         : 0;
       const peakLevel = levels.length ? Math.max(...levels) : 0;
+      const minLevel = levels.length ? Math.min(...levels) : 0;
 
       return {
         time: new Date(timestamp).toLocaleTimeString('th-TH', {
@@ -71,6 +72,7 @@ export default function DashboardPageContent() {
         timestamp: index,
         p1: Number(averageLevel.toFixed(3)),
         p2: Number(peakLevel.toFixed(3)),
+        p3: Number(minLevel.toFixed(3)),
       };
     });
   }, [filteredStationIds]);
@@ -110,7 +112,7 @@ export default function DashboardPageContent() {
       }}
     >
       <WaterLevelChart
-        title="กราฟแนวโน้มระดับน้ำ (ค่าเฉลี่ย/ค่าสูงสุด ของสถานีที่เลือก)"
+        title="กราฟแนวโน้มระดับน้ำ (ค่าเฉลี่ย/ค่าสูงสุด/ค่าต่ำสุด ของสถานีที่เลือก)"
         data={chartData}
         maxValue={chartMaxValue}
         predictionStartIndex={predictionStartIndex}

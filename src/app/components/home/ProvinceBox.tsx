@@ -9,7 +9,7 @@ const ProvinceBox = styled.div`
     width: min(100%, 550px);
     min-height: 180px;
     border-radius: 20px;
-    background: var(--color-surface-soft);
+    background: var(--color-surface);
     display: flex;
     flex-direction: column;
     justify-content: center;

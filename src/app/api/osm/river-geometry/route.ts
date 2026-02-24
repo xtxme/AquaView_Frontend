@@ -44,6 +44,14 @@ type OverpassResponse = {
   elements: OverpassElement[]
 }
 
+function isOverpassWayElement(element: OverpassElement): element is OverpassWayElement {
+  return element.type === 'way'
+}
+
+function isOverpassRelationElement(element: OverpassElement): element is OverpassRelationElement {
+  return element.type === 'relation'
+}
+
 const geometryCache = new Map<string, CacheEntry>()
 
 function clamp(value: number, min: number, max: number): number {
@@ -316,9 +324,9 @@ function collectRelationSegments(response: OverpassResponse, targetBbox: BBox): 
   const relations: OverpassRelationElement[] = []
 
   for (const element of response.elements) {
-    if (element.type === 'way') {
+    if (isOverpassWayElement(element)) {
       wayMap.set(element.id, element)
-    } else if (element.type === 'relation') {
+    } else if (isOverpassRelationElement(element)) {
       relations.push(element)
     }
   }
@@ -361,7 +369,7 @@ function collectRelationSegments(response: OverpassResponse, targetBbox: BBox): 
 function collectFallbackWaySegments(response: OverpassResponse): Position[][] {
   const segments: Position[][] = []
   for (const element of response.elements) {
-    if (element.type !== 'way') {
+    if (!isOverpassWayElement(element)) {
       continue
     }
 

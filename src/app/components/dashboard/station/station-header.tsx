@@ -2,6 +2,7 @@
 
 import React from 'react';
 import styled from 'styled-components';
+import { AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { Station } from '@/lib/types';
 
 const HeaderContainer = styled.div`
@@ -30,17 +31,19 @@ const IconWrapper = styled.div`
   min-height: 20px;
 `;
 
-const StatusBadge = styled.div<{ status: 'normal' | 'warning' | 'critical' }>`
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 8px;
+const StatusBadge = styled.div<{ $status: 'normal' | 'warning' | 'critical' }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
   margin-left: auto;
   font-family: var(--font-kanit), sans-serif;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
 
-  ${({ status }) => {
-        switch (status) {
+  ${({ $status }) => {
+        switch ($status) {
             case 'normal':
                 return `
           background-color: var(--status-safe-bg);
@@ -78,6 +81,9 @@ export const StationHeader: React.FC<StationHeaderProps> = ({ station, status })
         }
     };
 
+    const StatusIcon =
+        status === 'critical' ? ShieldAlert : status === 'warning' ? AlertTriangle : CheckCircle2;
+
     return (
         <HeaderContainer>
             {/* Location */}
@@ -105,7 +111,8 @@ export const StationHeader: React.FC<StationHeaderProps> = ({ station, status })
             </InfoItem>
 
             {/* Status */}
-            <StatusBadge status={status}>
+            <StatusBadge $status={status}>
+                <StatusIcon size={16} />
                 สถานะ: {getStatusText(status)}
             </StatusBadge>
         </HeaderContainer>

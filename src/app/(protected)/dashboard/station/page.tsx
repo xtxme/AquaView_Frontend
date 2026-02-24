@@ -22,7 +22,7 @@ const PageWrapper = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--color-page);
+  background: #fff;
 `;
 
 const ContentWrapper = styled.div`
@@ -144,13 +144,14 @@ function formatLastUpdated(ts?: string): string {
     return '-';
   }
 
-  return new Date(ts).toLocaleString('th-TH', {
+  return new Intl.DateTimeFormat('th-TH', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
-  });
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date(ts));
 }
 
 function buildRiskModel(params: {
@@ -306,8 +307,8 @@ function StationContent() {
       <Section>
         <SectionHeader>
           <div>
-            <h2 className="title">ข้อมูลปัจจุบันของสถานี</h2>
-            <p className="desc">ข้อมูลสำคัญสำหรับติดตามสถานการณ์แบบรวดเร็ว</p>
+            <h2 className="title">สถานีแม่ริม</h2>
+            <p className="desc">คำแนะนำ: ติดตามข้อมูลทุก 1 ชั่วโมง และหลีกเลี่ยงกิจกรรมริมตลิ่ง</p>
           </div>
         </SectionHeader>
 
@@ -319,6 +320,7 @@ function StationContent() {
           warningLevel={warningLevel}
           nearOverflowPercentage={nearOverflowPercentage}
           riskStatus={riskModel.status}
+          statusLabel={riskModel.statusLabel}
           riskMessage={riskModel.riskMessage}
         />
       </Section>
@@ -326,8 +328,7 @@ function StationContent() {
       <Section>
         <SectionHeader>
           <div>
-            <h2 className="title">แนวโน้มระดับน้ำ</h2>
-            <p className="desc">กราฟย้อนหลังและคาดการณ์ช่วง 6 ชั่วโมงถัดไป</p>
+            <h2 className="title">กราฟระดับน้ำ 24 ชั่วโมงย้อนหลัง</h2>
           </div>
           <ActionGroup>
             <ActionButton

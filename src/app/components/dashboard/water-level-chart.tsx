@@ -13,6 +13,7 @@ type WaterDataPoint = {
   timestamp: number;
   p1: number;
   p2: number;
+  p3: number;
   isPrediction?: boolean;
 };
 
@@ -24,11 +25,15 @@ type WaterLevelChartProps = {
 };
 
 // 1. Declare constants for styling
-const CHART_PRIMARY_COLOR = 'var(--chart-line-primary)';
-const CHART_SECONDARY_COLOR = 'var(--chart-line-secondary)';
+const CHART_PRIMARY_COLOR = '#1D4ED8';
+const CHART_SECONDARY_COLOR = '#F97316';
+const CHART_TERTIARY_COLOR = '#10B981';
 const ACTIVE_BUTTON_COLOR = 'var(--color-secondary)';
 const INACTIVE_BUTTON_BG = 'var(--color-surface-soft)';
 const INACTIVE_BUTTON_TEXT = 'var(--color-text-muted)';
+const ACTUAL_LINE_ANIMATION_DURATION_MS = 900;
+const PREDICTION_LINE_ANIMATION_DELAY_MS = ACTUAL_LINE_ANIMATION_DURATION_MS;
+const PREDICTION_LINE_ANIMATION_DURATION_MS = 700;
 
 // 2. Styled Components
 const StyledChartCard = styled.div`
@@ -44,10 +49,18 @@ const StyledChartCard = styled.div`
 
   & .chart-header {
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+    width: 100%;
+  }
+
+  & .chart-header-top {
+    display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    gap: 16px;
     width: 100%;
   }
 
@@ -70,6 +83,13 @@ const StyledChartCard = styled.div`
     display: flex;
     align-items: center;
     gap: 0;
+  }
+
+  & .unit-controls-row {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
   }
 
   & .legend-controls {
@@ -111,6 +131,12 @@ const StyledChartCard = styled.div`
     &.p2 {
       .legend-dot {
         background: ${CHART_SECONDARY_COLOR};
+      }
+    }
+
+    &.p3 {
+      .legend-dot {
+        background: ${CHART_TERTIARY_COLOR};
       }
     }
   }
@@ -188,15 +214,23 @@ const StyledChartCard = styled.div`
     min-height: 420px;
 
     & .chart-header {
+      gap: 10px;
+    }
+
+    & .chart-header-top {
       flex-direction: column;
       align-items: flex-start;
       gap: 12px;
     }
 
     & .header-controls {
-      width: 100%;
       flex-wrap: wrap;
       gap: 10px;
+    }
+
+    & .unit-controls-row {
+      justify-content: flex-start;
+      margin-top: 0;
     }
 
     & .chart-area {
@@ -214,6 +248,7 @@ export default function WaterLevelChart({
   const [unit, setUnit] = useState<"m" | "%">("m");
   const [showP1, setShowP1] = useState(true);
   const [showP2, setShowP2] = useState(true);
+  const [showP3, setShowP3] = useState(true);
 
   // แปลงหน่วยข้อมูล
   const convertedData = useMemo(() => {
@@ -224,6 +259,7 @@ export default function WaterLevelChart({
       ...d,
       p1: (d.p1 / maxValue) * 100,
       p2: (d.p2 / maxValue) * 100,
+      p3: (d.p3 / maxValue) * 100,
     }));
   }, [data, unit, maxValue]);
 
@@ -250,8 +286,10 @@ export default function WaterLevelChart({
         ...point,
         p1Actual: isPrediction ? null : point.p1,
         p2Actual: isPrediction ? null : point.p2,
+        p3Actual: isPrediction ? null : point.p3,
         p1Prediction: isPrediction || isPredictionBridgePoint ? point.p1 : null,
         p2Prediction: isPrediction || isPredictionBridgePoint ? point.p2 : null,
+        p3Prediction: isPrediction || isPredictionBridgePoint ? point.p3 : null,
       };
     });
   }, [convertedData, validPredictionStartIndex]);
@@ -272,34 +310,46 @@ export default function WaterLevelChart({
     <StyledChartCard>
       {/* Header */}
       <div className="chart-header">
-        {/* Title (left) */}
-        <h2 className="chart-title">
-          {title}
-        </h2>
+        <div className="chart-header-top">
+          {/* Title (left) */}
+          <h2 className="chart-title">
+            {title}
+          </h2>
 
-        {/* Controls (right) */}
-        <div className="header-controls">
-          {/* P1 P2 Legend */}
-          <div className="legend-controls">
-            <button
-              className={`legend-btn p1 ${showP1 ? "active" : ""}`}
-              onClick={() => setShowP1(!showP1)}
-              aria-pressed={showP1}
-            >
-              <span className="legend-dot"></span>
-              P1
-            </button>
-            <button
-              className={`legend-btn p2 ${showP2 ? "active" : ""}`}
-              onClick={() => setShowP2(!showP2)}
-              aria-pressed={showP2}
-            >
-              <span className="legend-dot"></span>
-              P2
-            </button>
+          {/* Controls (right) */}
+          <div className="header-controls">
+            {/* P1 P2 P3 Legend */}
+            <div className="legend-controls">
+              <button
+                className={`legend-btn p1 ${showP1 ? "active" : ""}`}
+                onClick={() => setShowP1(!showP1)}
+                aria-pressed={showP1}
+              >
+                <span className="legend-dot"></span>
+                P1
+              </button>
+              <button
+                className={`legend-btn p2 ${showP2 ? "active" : ""}`}
+                onClick={() => setShowP2(!showP2)}
+                aria-pressed={showP2}
+              >
+                <span className="legend-dot"></span>
+                P2
+              </button>
+              <button
+                className={`legend-btn p3 ${showP3 ? "active" : ""}`}
+                onClick={() => setShowP3(!showP3)}
+                aria-pressed={showP3}
+              >
+                <span className="legend-dot"></span>
+                P3
+              </button>
+            </div>
           </div>
+        </div>
 
-          {/* เมตร | เปอร์เซ็น */}
+        {/* เมตร | เปอร์เซ็น */}
+        <div className="unit-controls-row">
           <div className="controls">
             <button
               onClick={() => setUnit("m")}
@@ -433,6 +483,9 @@ export default function WaterLevelChart({
                 dot={false}
                 activeDot={{ r: 6 }}
                 connectNulls={false}
+                animationBegin={0}
+                animationDuration={ACTUAL_LINE_ANIMATION_DURATION_MS}
+                animationEasing="ease-out"
               />
             )}
             {showP2 && (
@@ -445,6 +498,24 @@ export default function WaterLevelChart({
                 dot={false}
                 activeDot={{ r: 6 }}
                 connectNulls={false}
+                animationBegin={0}
+                animationDuration={ACTUAL_LINE_ANIMATION_DURATION_MS}
+                animationEasing="ease-out"
+              />
+            )}
+            {showP3 && (
+              <Line
+                type="monotone"
+                dataKey="p3Actual"
+                name="P3"
+                stroke={CHART_TERTIARY_COLOR}
+                strokeWidth={3}
+                dot={false}
+                activeDot={{ r: 6 }}
+                connectNulls={false}
+                animationBegin={0}
+                animationDuration={ACTUAL_LINE_ANIMATION_DURATION_MS}
+                animationEasing="ease-out"
               />
             )}
 
@@ -460,6 +531,9 @@ export default function WaterLevelChart({
                 dot={false}
                 activeDot={{ r: 6 }}
                 connectNulls={false}
+                animationBegin={PREDICTION_LINE_ANIMATION_DELAY_MS}
+                animationDuration={PREDICTION_LINE_ANIMATION_DURATION_MS}
+                animationEasing="ease-out"
               />
             )}
             {showP2 && validPredictionStartIndex !== null && (
@@ -473,6 +547,25 @@ export default function WaterLevelChart({
                 dot={false}
                 activeDot={{ r: 6 }}
                 connectNulls={false}
+                animationBegin={PREDICTION_LINE_ANIMATION_DELAY_MS}
+                animationDuration={PREDICTION_LINE_ANIMATION_DURATION_MS}
+                animationEasing="ease-out"
+              />
+            )}
+            {showP3 && validPredictionStartIndex !== null && (
+              <Line
+                type="monotone"
+                dataKey="p3Prediction"
+                name="P3 (คาดการณ์)"
+                stroke="var(--chart-line-prediction)"
+                strokeWidth={3}
+                strokeDasharray="8 4"
+                dot={false}
+                activeDot={{ r: 6 }}
+                connectNulls={false}
+                animationBegin={PREDICTION_LINE_ANIMATION_DELAY_MS}
+                animationDuration={PREDICTION_LINE_ANIMATION_DURATION_MS}
+                animationEasing="ease-out"
               />
             )}
             </LineChart>
